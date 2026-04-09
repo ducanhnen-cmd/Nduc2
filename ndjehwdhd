@@ -1,0 +1,844 @@
+-- NducHub | By Nduc - Preview (LocalScript)
+-- Dành cho Blox Fruit
+-- GIAO DIỆN ĐÃ ĐƯỢC SẮP XẾP GỌN GÀNG - CÓ NÚT BẬT/TẮT HÌNH Ô VUÔNG
+-- ĐÃ THÊM CHỨC NĂNG BRING MOB (KÉO QUÁI)
+
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local Lighting = game:GetService("Lighting")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- cleanup
+if CoreGui:FindFirstChild("NducHubPreview") then
+    CoreGui.NducHubPreview:Destroy()
+end
+
+-- colors
+local BG = Color3.fromRGB(12,12,12)
+local PANEL = Color3.fromRGB(22,22,22)
+local PANEL_ALT = Color3.fromRGB(28,28,28)
+local ACCENT = Color3.fromRGB(0,120,255)
+local TXT = Color3.fromRGB(230,230,230)
+local MUTED = Color3.fromRGB(160,160,160)
+local GREEN = Color3.fromRGB(0,255,100)
+local RED = Color3.fromRGB(255,50,50)
+local YELLOW = Color3.fromRGB(255,200,0)
+
+local function new(class, props)
+    local inst = Instance.new(class)
+    if props then
+        for k,v in pairs(props) do
+            if k == "Parent" then inst.Parent = v else inst[k] = v end
+        end
+    end
+    return inst
+end
+
+local screenGui = new("ScreenGui", {Name = "NducHubPreview", Parent = CoreGui, ResetOnSpawn = false})
+screenGui.IgnoreGuiInset = true
+
+-- ========== FPS COUNTER ==========
+local fpsFrame = new("Frame", {
+    Parent = screenGui, Name = "FPSFrame", Size = UDim2.new(0, 80, 0, 30),
+    Position = UDim2.new(0, 10, 0, 10), BackgroundColor3 = Color3.fromRGB(0,0,0),
+    BackgroundTransparency = 0.5, BorderSizePixel = 0
+})
+new("UICorner", {Parent = fpsFrame, CornerRadius = UDim.new(0, 8)})
+
+local fpsLabel = new("TextLabel", {
+    Parent = fpsFrame, Text = "FPS: --", Font = Enum.Font.GothamBold,
+    TextSize = 14, TextColor3 = ACCENT, BackgroundTransparency = 1,
+    Size = UDim2.new(1,0,1,0), TextXAlignment = Enum.TextXAlignment.Center
+})
+
+local lastTime = tick()
+local frameCount = 0
+
+RunService.RenderStepped:Connect(function()
+    frameCount = frameCount + 1
+    local currentTime = tick()
+    if currentTime - lastTime >= 1 then
+        fpsLabel.Text = "FPS: " .. frameCount
+        frameCount = 0
+        lastTime = currentTime
+    end
+end)
+
+-- ========== FIX LAG ==========
+local fixLagEnabled = true
+
+local function applyFixLag()
+    if not fixLagEnabled then return end
+    pcall(function()
+        Lighting.GlobalShadows = false
+        Lighting.FogEnd = 1000
+        Lighting.FogStart = 500
+        Lighting.Brightness = 1
+        Lighting.ClockTime = 12
+        local settings = UserSettings()
+        local gameSettings = settings:GetService("UserGameSettings")
+        gameSettings.EnvironmentalQuality = Enum.EnvironmentalQuality.Low
+        Workspace.Terrain.WaterWaveSize = 0
+        Workspace.CurrentCamera.FieldOfView = 70
+    end)
+    for _, v in ipairs(Workspace:GetDescendants()) do
+        if v:IsA("ParticleEmitter") or v:IsA("Fire") or v:IsA("Smoke") then
+            pcall(function() v.Enabled = false end)
+        end
+    end
+end
+
+local function startFixLagLoop()
+    task.spawn(function()
+        while fixLagEnabled do
+            applyFixLag()
+            task.wait(5)
+        end
+    end)
+end
+startFixLagLoop()
+
+-- ========== THÔNG BÁO ==========
+local notificationFrame = new("Frame", {
+    Parent = screenGui, Size = UDim2.new(0, 280, 0, 50),
+    Position = UDim2.new(1, -290, 1, -60), BackgroundColor3 = PANEL,
+    BackgroundTransparency = 0.8, BorderSizePixel = 0
+})
+new("UICorner", {Parent = notificationFrame, CornerRadius = UDim.new(0, 8)})
+
+local notificationLabel = new("TextLabel", {
+    Parent = notificationFrame, Text = "✅ NducHub đã sẵn sàng!",
+    Font = Enum.Font.GothamBold, TextSize = 13, TextColor3 = ACCENT,
+    BackgroundTransparency = 1, Size = UDim2.new(1,0,1,0),
+    TextXAlignment = Enum.TextXAlignment.Center
+})
+
+TweenService:Create(notificationFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    Position = UDim2.new(1, -290, 1, -70)
+}):Play()
+TweenService:Create(notificationFrame, TweenInfo.new(0.3), {BackgroundTransparency = 0.2}):Play()
+
+task.delay(5, function()
+    TweenService:Create(notificationFrame, TweenInfo.new(0.5), {
+        Position = UDim2.new(1, -290, 1, -50), BackgroundTransparency = 1
+    }):Play()
+    task.delay(1, function() notificationFrame.Visible = false end)
+end)
+
+-- ========== NÚT TOGGLE ==========
+local toggleButton = new("ImageButton", {
+    Parent = screenGui, Size = UDim2.new(0,50,0,50),
+    Position = UDim2.new(0,20,0.5,-25), BackgroundColor3 = ACCENT,
+    Image = "rbxassetid://88161224206829", ScaleType = Enum.ScaleType.Fit,
+    BorderSizePixel = 0, Visible = true
+})
+new("UICorner", {Parent = toggleButton, CornerRadius = UDim.new(1,0)})
+
+-- Window chính
+local window = new("Frame", {
+    Parent = screenGui, Size = UDim2.fromOffset(650,620),
+    Position = UDim2.new(0.5, -325, 0.5, -310), BackgroundColor3 = BG,
+    BorderSizePixel = 0, ClipsDescendants = true, Visible = true
+})
+new("UICorner", {Parent = window, CornerRadius = UDim.new(0,12)})
+
+-- Header
+local header = new("Frame", {Parent = window, Size = UDim2.new(1,0,0,48), BackgroundColor3 = PANEL_ALT, BorderSizePixel = 0})
+new("UICorner", {Parent = header, CornerRadius = UDim.new(0,12)})
+
+local titleLabel = new("TextLabel", {Parent = header, Text = "Nduc Hub", Font = Enum.Font.GothamBold, TextSize = 18, TextColor3 = ACCENT, BackgroundTransparency = 1, Position = UDim2.new(0,12,0,6), Size = UDim2.new(0.7,0,0,20), TextXAlignment = Enum.TextXAlignment.Left})
+local subLabel = new("TextLabel", {Parent = header, Text = "By Nduc", Font = Enum.Font.Gotham, TextSize = 12, TextColor3 = MUTED, BackgroundTransparency = 1, Position = UDim2.new(0,12,0,26), Size = UDim2.new(0.7,0,0,16), TextXAlignment = Enum.TextXAlignment.Left})
+
+local btnCollapse = new("TextButton", {Parent = header, Size = UDim2.new(0,44,0,30), Position = UDim2.new(1,-56,0.5,-15), BackgroundColor3 = PANEL, Text = "-", Font = Enum.Font.GothamBold, TextSize = 20, TextColor3 = TXT, AutoButtonColor = false})
+new("UICorner", {Parent = btnCollapse, CornerRadius = UDim.new(0,8)})
+
+-- Tab bar
+local tabBar = new("Frame", {Parent = window, Size = UDim2.new(1,0,0,44), Position = UDim2.new(0,0,0,48), BackgroundColor3 = PANEL, BorderSizePixel = 0})
+new("UICorner", {Parent = tabBar, CornerRadius = UDim.new(0,8)})
+
+local tabScroller = new("ScrollingFrame", {Parent = tabBar, Size = UDim2.new(1,-24,1,0), Position = UDim2.new(0,12,0,0), BackgroundTransparency = 1, ScrollBarThickness = 6, CanvasSize = UDim2.new(0,0,0,0), AutomaticCanvasSize = Enum.AutomaticSize.X, HorizontalScrollBarInset = Enum.ScrollBarInset.Always})
+local tabListLayout = new("UIListLayout", {Parent = tabScroller, FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0,8)})
+
+local content = new("Frame", {Parent = window, Size = UDim2.new(1,0,1, -92), Position = UDim2.new(0,0,0,92), BackgroundTransparency = 1})
+
+-- ========== FAST ATTACK CỐT LÕI ==========
+local RS = ReplicatedStorage
+local N, C, hit, atk = nil, nil, nil, nil
+
+local function setupFastAttack()
+    pcall(function()
+        N = require(RS.Modules.Net)
+        C = require(RS.Modules.CombatUtil)
+        hit = N:RemoteEvent("RegisterHit", true)
+        atk = RS.Modules.Net["RE/RegisterAttack"]
+    end)
+end
+setupFastAttack()
+
+local fastAttackEnabled = true
+local distanceFarm = 50
+local selectedWeapon = "Melee"
+
+local function equipWeapon(weaponType)
+    selectedWeapon = weaponType
+    print("[Chọn Vũ Khí] Đã chọn:", weaponType)
+end
+
+local function startFastAttack()
+    task.spawn(function()
+        while fastAttackEnabled do
+            task.wait()
+            local p = Players.LocalPlayer
+            local c = p.Character if not c then continue end
+            local r = c:FindFirstChild("HumanoidRootPart")
+            local t = c:FindFirstChildOfClass("Tool")
+            if not (r and t) then continue end
+            local id = tostring(p.UserId):sub(2,4) .. tostring(coroutine.running()):sub(11,15)
+            local didy = false
+            
+            local enemies = Workspace:FindFirstChild("Enemies")
+            if enemies then
+                for _, m in ipairs(enemies:GetChildren()) do
+                    local h = m:FindFirstChild("HumanoidRootPart")
+                    local u = m:FindFirstChild("Humanoid")
+                    if h and u and u.Health > 0 and (h.Position - r.Position).Magnitude <= distanceFarm then
+                        if not didy and atk then pcall(function() atk:FireServer() end) didy = true end
+                        if hit then pcall(function() hit:FireServer(h, {{m, h}}, nil, nil, id) end) end
+                    end
+                end
+            end
+        end
+    end)
+end
+startFastAttack()
+
+-- ========== BRING MOB (KÉO QUÁI) ==========
+local bringMobEnabled = false
+local bringRange = 100
+local bringDistance = 5
+
+local function startBringMob()
+    task.spawn(function()
+        while bringMobEnabled do
+            task.wait(0.15)
+            local player = Players.LocalPlayer
+            local char = player.Character
+            if not char then task.wait(1) continue end
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if not root then task.wait(1) continue end
+            
+            local rootPos = root.Position
+            local lookVector = root.CFrame.LookVector
+            
+            for _, v in ipairs(workspace:GetDescendants()) do
+                if v:IsA("Model") and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") then
+                    local hrp = v.HumanoidRootPart
+                    local hum = v.Humanoid
+                    
+                    if not Players:GetPlayerFromCharacter(v) and hum.Health > 0 then
+                        local dist = (hrp.Position - rootPos).Magnitude
+                        if dist <= bringRange then
+                            local targetPos = rootPos + lookVector * bringDistance
+                            hrp.CFrame = hrp.CFrame:Lerp(CFrame.new(targetPos), 0.6)
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-- ========== CÁC HÀM DI CHUYỂN ==========
+local function moveTo(position)
+    local player = Players.LocalPlayer
+    local character = player.Character
+    if not character then return end
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        hrp.CFrame = CFrame.new(position)
+    end
+end
+
+-- ========== FARM XƯƠNG ==========
+local farmBoneEnabled = false
+local darkCastlePosition = Vector3.new(-700, 0, -700)
+
+local function startFarmBone()
+    task.spawn(function()
+        while farmBoneEnabled do
+            task.wait(0.5)
+        end
+    end)
+end
+
+-- ========== FARM KATAKURI ==========
+local farmKatakuriEnabled = false
+local katakuriKillCount = 0
+local katakuriTargetKills = 500
+local cakePrinceSpawned = false
+local doughKingSpawned = false
+local cakeLandPosition = Vector3.new(-700, 0, -700)
+
+local function startFarmKatakuri()
+    task.spawn(function()
+        while farmKatakuriEnabled do
+            task.wait(0.5)
+        end
+    end)
+end
+
+-- ========== FARM LEVEL ==========
+local farmLevelEnabled = false
+local autoQuestEnabled = false
+local currentIslandTarget = nil
+
+local islands = {
+    {Name = "Pirate Island", Sea = 1, MinLevel = 1, MaxLevel = 30, Position = Vector3.new(-1250, 0, -1250)},
+    {Name = "Jungle", Sea = 1, MinLevel = 30, MaxLevel = 60, Position = Vector3.new(-1000, 0, -1000)},
+    {Name = "Desert", Sea = 1, MinLevel = 60, MaxLevel = 90, Position = Vector3.new(-750, 0, -750)},
+    {Name = "Snow Island", Sea = 1, MinLevel = 90, MaxLevel = 120, Position = Vector3.new(-500, 0, -500)},
+    {Name = "Marine Fortress", Sea = 1, MinLevel = 120, MaxLevel = 150, Position = Vector3.new(-250, 0, -250)},
+    {Name = "Sky Islands", Sea = 1, MinLevel = 150, MaxLevel = 200, Position = Vector3.new(0, 500, 0)},
+    {Name = "Prison", Sea = 1, MinLevel = 200, MaxLevel = 250, Position = Vector3.new(250, 0, 250)},
+    {Name = "Colosseum", Sea = 1, MinLevel = 250, MaxLevel = 300, Position = Vector3.new(500, 0, 500)},
+    {Name = "Magma Village", Sea = 1, MinLevel = 300, MaxLevel = 350, Position = Vector3.new(750, 0, 750)},
+    {Name = "Underwater City", Sea = 1, MinLevel = 350, MaxLevel = 400, Position = Vector3.new(1000, -200, 1000)},
+    {Name = "Fountain City", Sea = 1, MinLevel = 400, MaxLevel = 450, Position = Vector3.new(1200, 0, 1200)},
+    {Name = "Marine City", Sea = 1, MinLevel = 450, MaxLevel = 500, Position = Vector3.new(1400, 0, 1400)},
+    {Name = "Port Town", Sea = 1, MinLevel = 500, MaxLevel = 550, Position = Vector3.new(1600, 0, 1600)},
+    {Name = "Kingdom of Rose", Sea = 1, MinLevel = 550, MaxLevel = 700, Position = Vector3.new(1800, 0, 1800)},
+    {Name = "Green Zone", Sea = 2, MinLevel = 700, MaxLevel = 750, Position = Vector3.new(-1800, 0, -1800)},
+    {Name = "Graveyard", Sea = 2, MinLevel = 750, MaxLevel = 800, Position = Vector3.new(-1550, 0, -1550)},
+    {Name = "Snow Mountain", Sea = 2, MinLevel = 800, MaxLevel = 850, Position = Vector3.new(-1300, 0, -1300)},
+    {Name = "Hot and Cold", Sea = 2, MinLevel = 850, MaxLevel = 900, Position = Vector3.new(-1050, 0, -1050)},
+    {Name = "Cursed Ship", Sea = 2, MinLevel = 900, MaxLevel = 950, Position = Vector3.new(-800, 0, -800)},
+    {Name = "Ice Castle", Sea = 2, MinLevel = 950, MaxLevel = 1000, Position = Vector3.new(-550, 0, -550)},
+    {Name = "Forgotten Island", Sea = 2, MinLevel = 1000, MaxLevel = 1050, Position = Vector3.new(-300, 0, -300)},
+    {Name = "Usoap's Island", Sea = 2, MinLevel = 1050, MaxLevel = 1100, Position = Vector3.new(-50, 0, -50)},
+    {Name = "Kingdom of Rose S2", Sea = 2, MinLevel = 1100, MaxLevel = 1200, Position = Vector3.new(200, 0, 200)},
+    {Name = "Flamingo's Mansion", Sea = 2, MinLevel = 1200, MaxLevel = 1300, Position = Vector3.new(450, 0, 450)},
+    {Name = "Punk Hazard", Sea = 2, MinLevel = 1300, MaxLevel = 1400, Position = Vector3.new(700, 0, 700)},
+    {Name = "Law's Lab", Sea = 2, MinLevel = 1400, MaxLevel = 1500, Position = Vector3.new(950, 0, 950)},
+    {Name = "Port of Entry", Sea = 3, MinLevel = 1500, MaxLevel = 1550, Position = Vector3.new(-2200, 0, -2200)},
+    {Name = "Hydra Island", Sea = 3, MinLevel = 1550, MaxLevel = 1600, Position = Vector3.new(-1950, 0, -1950)},
+    {Name = "Great Tree", Sea = 3, MinLevel = 1600, MaxLevel = 1650, Position = Vector3.new(-1700, 0, -1700)},
+    {Name = "Castle on the Sea", Sea = 3, MinLevel = 1650, MaxLevel = 1700, Position = Vector3.new(-1450, 0, -1450)},
+    {Name = "Floating Turtle", Sea = 3, MinLevel = 1700, MaxLevel = 1750, Position = Vector3.new(-1200, 0, -1200)},
+    {Name = "Mansion", Sea = 3, MinLevel = 1750, MaxLevel = 1800, Position = Vector3.new(-950, 0, -950)},
+    {Name = "Cake Land", Sea = 3, MinLevel = 1800, MaxLevel = 1900, Position = Vector3.new(-700, 0, -700)},
+    {Name = "Candy Land", Sea = 3, MinLevel = 1900, MaxLevel = 2000, Position = Vector3.new(-450, 0, -450)},
+    {Name = "Sweet Land", Sea = 3, MinLevel = 2000, MaxLevel = 2100, Position = Vector3.new(-200, 0, -200)},
+    {Name = "Choco Land", Sea = 3, MinLevel = 2100, MaxLevel = 2200, Position = Vector3.new(50, 0, 50)},
+    {Name = "Sea of Treats", Sea = 3, MinLevel = 2200, MaxLevel = 2300, Position = Vector3.new(300, 0, 300)},
+    {Name = "Elite Island", Sea = 3, MinLevel = 2300, MaxLevel = 2400, Position = Vector3.new(550, 0, 550)},
+    {Name = "Tiki Island", Sea = 3, MinLevel = 2400, MaxLevel = 2500, Position = Vector3.new(800, 0, 800)},
+    {Name = "Mirage Island", Sea = 3, MinLevel = 2500, MaxLevel = 2600, Position = Vector3.new(1050, 0, 1050)},
+}
+
+local function getPlayerLevel()
+    local player = Players.LocalPlayer
+    local leaderstats = player:FindFirstChild("leaderstats")
+    if leaderstats then
+        local level = leaderstats:FindFirstChild("Level")
+        if level then return level.Value end
+    end
+    return 1
+end
+
+local function getIslandByLevel(level)
+    for _, island in ipairs(islands) do
+        if level >= island.MinLevel and level <= island.MaxLevel then
+            return island
+        end
+    end
+    return islands[#islands]
+end
+
+local function teleportToIsland(island)
+    if not island then return end
+    moveTo(island.Position)
+end
+
+local function startSmartFarmLevel()
+    task.spawn(function()
+        while farmLevelEnabled do
+            local currentLevel = getPlayerLevel()
+            local newIsland = getIslandByLevel(currentLevel)
+            if newIsland and (not currentIslandTarget or newIsland.Name ~= currentIslandTarget.Name) then
+                currentIslandTarget = newIsland
+                teleportToIsland(currentIslandTarget)
+                task.wait(1)
+            end
+            task.wait(0.5)
+        end
+    end)
+end
+
+local farmNearMobEnabled = false
+local function startFarmNearMob()
+    task.spawn(function()
+        while farmNearMobEnabled do
+            task.wait(0.5)
+        end
+    end)
+end
+
+-- ========== GIAO DIỆN ==========
+-- TAB INFO
+local infoPage = new("Frame", {Parent = content, Name = "Info", Size = UDim2.new(1,0,1,0), BackgroundTransparency = 1, Visible = false})
+
+local discordFrame = new("Frame", {Parent = infoPage, Size = UDim2.new(0.9,0,0,80), Position = UDim2.new(0.05,0,0.08,0), BackgroundColor3 = PANEL})
+new("UICorner", {Parent = discordFrame, CornerRadius = UDim.new(0,10)})
+
+local discordLabel = new("TextLabel", {Parent = discordFrame, Text = "📢 DISCORD", Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = ACCENT, BackgroundTransparency = 1, Position = UDim2.new(0,12,0,8), Size = UDim2.new(1,-24,0,22), TextXAlignment = Enum.TextXAlignment.Left})
+
+local discordLink = new("TextButton", {Parent = discordFrame, Text = "https://discord.gg/Y3wvd5cmE", Font = Enum.Font.Gotham, TextSize = 12, TextColor3 = ACCENT, BackgroundTransparency = 1, Position = UDim2.new(0,12,0,34), Size = UDim2.new(1,-24,0,30), TextXAlignment = Enum.TextXAlignment.Left, AutoButtonColor = false})
+discordLink.MouseButton1Click:Connect(function() pcall(function() setclipboard("https://discord.gg/Y3wvd5cmE") end) end)
+
+local welcomeFrame = new("Frame", {Parent = infoPage, Size = UDim2.new(0.9,0,0,60), Position = UDim2.new(0.05,0,0.35,0), BackgroundColor3 = PANEL})
+new("UICorner", {Parent = welcomeFrame, CornerRadius = UDim.new(0,10)})
+
+local welcomeLabel = new("TextLabel", {Parent = welcomeFrame, Text = "✨ Chào mừng bạn đến với NducHub!", Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = ACCENT, BackgroundTransparency = 1, Size = UDim2.new(1,0,1,0), TextXAlignment = Enum.TextXAlignment.Center})
+
+-- TAB MAIN FARM
+local mainFarmPage = new("Frame", {Parent = content, Name = "Main Farm", Size = UDim2.new(1,0,1,0), BackgroundTransparency = 1, Visible = false})
+
+-- PANEL TRÁI - MAIN FARM
+local leftPanel = new("Frame", {Parent = mainFarmPage, Size = UDim2.new(0.48,0,1,0), Position = UDim2.new(0,0,0,0), BackgroundColor3 = PANEL})
+new("UICorner", {Parent = leftPanel, CornerRadius = UDim.new(0,10)})
+
+local leftTitle = new("TextLabel", {Parent = leftPanel, Text = "⚔️ MAIN FARM", Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = ACCENT, BackgroundTransparency = 1, Position = UDim2.new(0,12,0,10), Size = UDim2.new(1,-24,0,25), TextXAlignment = Enum.TextXAlignment.Left})
+local leftDivider = new("Frame", {Parent = leftPanel, Size = UDim2.new(1,-24,0,2), Position = UDim2.new(0,12,0,40), BackgroundColor3 = ACCENT, BackgroundTransparency = 0.5})
+
+local leftScroll = new("ScrollingFrame", {Parent = leftPanel, Size = UDim2.new(1,-16,1,-60), Position = UDim2.new(0,8,0,50), BackgroundTransparency = 1, ScrollBarThickness = 6, CanvasSize = UDim2.new(0,0,0,0)})
+leftScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+local leftLayout = new("UIListLayout", {Parent = leftScroll, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0,8)})
+
+-- PANEL PHẢI - SETTINGS
+local rightPanel = new("Frame", {Parent = mainFarmPage, Size = UDim2.new(0.48,0,1,0), Position = UDim2.new(0.52,0,0,0), BackgroundColor3 = PANEL})
+new("UICorner", {Parent = rightPanel, CornerRadius = UDim.new(0,10)})
+
+local rightTitle = new("TextLabel", {Parent = rightPanel, Text = "⚙️ SETTINGS", Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = ACCENT, BackgroundTransparency = 1, Position = UDim2.new(0,12,0,10), Size = UDim2.new(1,-24,0,25), TextXAlignment = Enum.TextXAlignment.Left})
+local rightDivider = new("Frame", {Parent = rightPanel, Size = UDim2.new(1,-24,0,2), Position = UDim2.new(0,12,0,40), BackgroundColor3 = ACCENT, BackgroundTransparency = 0.5})
+
+local verticalDivider = new("Frame", {Parent = mainFarmPage, Size = UDim2.new(0,2,1,-40), Position = UDim2.new(0.5,-1,0,20), BackgroundColor3 = ACCENT, BackgroundTransparency = 0.3})
+
+local rightScroll = new("ScrollingFrame", {Parent = rightPanel, Size = UDim2.new(1,-16,1,-60), Position = UDim2.new(0,8,0,50), BackgroundTransparency = 1, ScrollBarThickness = 6, CanvasSize = UDim2.new(0,0,0,0)})
+rightScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+local rightLayout = new("UIListLayout", {Parent = rightScroll, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0,8)})
+
+-- HÀM TẠO TOGGLE HÌNH Ô VUÔNG
+local function makeToggle(parent, text, default, callback)
+    local row = new("TextButton", {Parent = parent, Size = UDim2.new(1,0,0,42), BackgroundColor3 = Color3.fromRGB(35,35,35), AutoButtonColor = false, Text = ""})
+    new("UICorner", {Parent = row, CornerRadius = UDim.new(0,8)})
+    
+    local label = new("TextLabel", {Parent = row, Text = text, Font = Enum.Font.Gotham, TextSize = 13, TextColor3 = TXT, BackgroundTransparency = 1, Position = UDim2.new(0,12,0,0), Size = UDim2.new(1,-70,1,0), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center})
+    
+    -- Nút bật/tắt hình ô vuông
+    local sw = new("Frame", {Parent = row, Size = UDim2.new(0,24,0,24), Position = UDim2.new(1,-36,0.5,-12), BackgroundColor3 = default and ACCENT or Color3.fromRGB(80,80,80)})
+    new("UICorner", {Parent = sw, CornerRadius = UDim.new(0, 4)})
+    
+    -- Dấu tích khi bật
+    local checkMark = new("TextLabel", {Parent = sw, Text = "✓", Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = Color3.fromRGB(255,255,255), BackgroundTransparency = 1, Size = UDim2.new(1,0,1,0), TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Center, Visible = default})
+    
+    local toggled = default or false
+    
+    local function setState(v, animate)
+        toggled = v
+        local color = toggled and ACCENT or Color3.fromRGB(80,80,80)
+        if animate then
+            TweenService:Create(sw, TweenInfo.new(0.14), {BackgroundColor3 = color}):Play()
+        else
+            sw.BackgroundColor3 = color
+        end
+        checkMark.Visible = toggled
+        if callback then pcall(callback, toggled) end
+    end
+    
+    row.MouseButton1Click:Connect(function() setState(not toggled, true) end)
+    
+    return {Row = row, Set = setState, Get = function() return toggled end}
+end
+
+-- HÀM TẠO DROPDOWN
+local function makeDropdown(parent, text, options, default, callback)
+    local row = new("Frame", {Parent = parent, Size = UDim2.new(1,0,0,60), BackgroundColor3 = Color3.fromRGB(35,35,35)})
+    new("UICorner", {Parent = row, CornerRadius = UDim.new(0,8)})
+    
+    local label = new("TextLabel", {Parent = row, Text = text, Font = Enum.Font.Gotham, TextSize = 13, TextColor3 = TXT, BackgroundTransparency = 1, Position = UDim2.new(0,12,0,8), Size = UDim2.new(1,-24,0,18), TextXAlignment = Enum.TextXAlignment.Left})
+    
+    local btn = new("TextButton", {Parent = row, Size = UDim2.new(1,-24,0,32), Position = UDim2.new(0,12,0,24), BackgroundColor3 = Color3.fromRGB(55,55,55), Text = default or options[1], Font = Enum.Font.Gotham, TextSize = 13, TextColor3 = TXT, AutoButtonColor = false})
+    new("UICorner", {Parent = btn, CornerRadius = UDim.new(0,6)})
+    
+    local menu = new("Frame", {Parent = row, Size = UDim2.new(1,-24,0,#options*32), Position = UDim2.new(0,12,0,56), BackgroundColor3 = Color3.fromRGB(45,45,45), Visible = false})
+    new("UICorner", {Parent = menu, CornerRadius = UDim.new(0,6)})
+    
+    for i, opt in ipairs(options) do
+        local optBtn = new("TextButton", {Parent = menu, Size = UDim2.new(1,-8,0,30), Position = UDim2.new(0,4,0,(i-1)*32), BackgroundTransparency = 1, Text = opt, Font = Enum.Font.Gotham, TextSize = 12, TextColor3 = TXT, AutoButtonColor = false})
+        optBtn.MouseButton1Click:Connect(function()
+            btn.Text = opt
+            menu.Visible = false
+            if callback then pcall(callback, opt) end
+        end)
+    end
+    
+    btn.MouseButton1Click:Connect(function()
+        menu.Visible = not menu.Visible
+        task.delay(5, function() menu.Visible = false end)
+    end)
+    
+    return {Row = row, Get = function() return btn.Text end}
+end
+
+-- HÀM TẠO SLIDER
+local function makeSlider(parent, text, minv, maxv, default, callback)
+    local row = new("Frame", {Parent = parent, Size = UDim2.new(1,0,0,70), BackgroundColor3 = Color3.fromRGB(35,35,35)})
+    new("UICorner", {Parent = row, CornerRadius = UDim.new(0,8)})
+    
+    local label = new("TextLabel", {Parent = row, Text = text, Font = Enum.Font.Gotham, TextSize = 13, TextColor3 = TXT, BackgroundTransparency = 1, Position = UDim2.new(0,12,0,8), Size = UDim2.new(1,-24,0,20), TextXAlignment = Enum.TextXAlignment.Left})
+    
+    local valueLabel = new("TextLabel", {Parent = row, Text = tostring(default), Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = ACCENT, BackgroundTransparency = 1, Position = UDim2.new(1,-50,0,8), Size = UDim2.new(0,40,0,20), TextXAlignment = Enum.TextXAlignment.Right})
+    
+    local bar = new("Frame", {Parent = row, Size = UDim2.new(1,-80,0,6), Position = UDim2.new(0,12,0,45), BackgroundColor3 = Color3.fromRGB(60,60,60)})
+    new("UICorner", {Parent = bar, CornerRadius = UDim.new(0,3)})
+    
+    local frac = (default - minv) / (maxv - minv)
+    local fill = new("Frame", {Parent = bar, Size = UDim2.new(frac,0,1,0), BackgroundColor3 = ACCENT})
+    new("UICorner", {Parent = fill, CornerRadius = UDim.new(0,3)})
+    
+    local knob = new("Frame", {Parent = bar, Size = UDim2.new(0,14,0,14), Position = UDim2.new(frac,-7,0.5,-7), BackgroundColor3 = Color3.fromRGB(245,245,245)})
+    new("UICorner", {Parent = knob, CornerRadius = UDim.new(1,0)})
+    
+    local dragging = false
+    
+    local function updateValue(input)
+        local x = math.clamp(input.Position.X - bar.AbsolutePosition.X, 0, bar.AbsoluteSize.X)
+        local newFrac = x / bar.AbsoluteSize.X
+        local val = math.floor(minv + (maxv - minv) * newFrac)
+        fill.Size = UDim2.new(newFrac,0,1,0)
+        knob.Position = UDim2.new(newFrac,-7,0.5,-7)
+        valueLabel.Text = tostring(val)
+        distanceFarm = val
+        if callback then callback(val) end
+    end
+    
+    knob.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            local con
+            con = UserInputService.InputChanged:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+                    updateValue(input)
+                end
+            end)
+            knob.InputEnded:Connect(function()
+                dragging = false
+                con:Disconnect()
+            end)
+        end
+    end)
+    
+    bar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            updateValue(input)
+            dragging = true
+        end
+    end)
+    
+    return {Row = row}
+end
+
+-- ========== TẠO CÁC TOGGLE BÊN TRÁI (HÌNH Ô VUÔNG) ==========
+makeToggle(leftScroll, "🏆 Farm Level (Auto Sea)", false, function(v)
+    farmLevelEnabled = v
+    if v then
+        currentIslandTarget = getIslandByLevel(getPlayerLevel())
+        teleportToIsland(currentIslandTarget)
+        startSmartFarmLevel()
+    end
+end)
+
+makeToggle(leftScroll, "👥 Farm Near Mob", false, function(v)
+    farmNearMobEnabled = v
+    if v then startFarmNearMob() end
+end)
+
+makeToggle(leftScroll, "📜 Auto Quest", false, function(v)
+    autoQuestEnabled = v
+end)
+
+makeToggle(leftScroll, "🦴 Farm Xương", false, function(v)
+    farmBoneEnabled = v
+    if v then startFarmBone() end
+end)
+
+makeToggle(leftScroll, "🍰 Farm Katakuri", false, function(v)
+    farmKatakuriEnabled = v
+    if v then
+        katakuriKillCount = 0
+        cakePrinceSpawned = false
+        doughKingSpawned = false
+        startFarmKatakuri()
+    end
+end)
+
+-- ========== BÊN PHẢI ==========
+-- Dropdown chọn vũ khí
+makeDropdown(rightScroll, "⚔️ Choose Weapon", {"Melee", "Fruit", "Sword", "Gun"}, "Melee", function(v)
+    selectedWeapon = v
+    equipWeapon(v)
+end)
+
+-- Các toggle settings (hình ô vuông)
+makeToggle(rightScroll, "⚡ Fast Attack", true, function(v)
+    fastAttackEnabled = v
+end)
+
+makeToggle(rightScroll, "🔧 Fix Lag", true, function(v)
+    fixLagEnabled = v
+    if v then applyFixLag() end
+end)
+
+makeToggle(rightScroll, "📦 Auto Store Items", false, function(v)
+    print("[Auto Store]", v)
+end)
+
+-- ========== TOGGLE BRING MOB (THÊM MỚI) ==========
+makeToggle(rightScroll, "🔄 Bring Mob (Kéo Quái)", false, function(v)
+    bringMobEnabled = v
+    if v then 
+        startBringMob()
+        notificationLabel.Text = "🔄 Đã bật Bring Mob - Đang kéo quái về phía bạn!"
+        TweenService:Create(notificationFrame, TweenInfo.new(0.3), {BackgroundTransparency = 0.2}):Play()
+        task.delay(2, function()
+            notificationLabel.Text = "✅ NducHub đã sẵn sàng!"
+        end)
+    else
+        notificationLabel.Text = "🔴 Đã tắt Bring Mob"
+        TweenService:Create(notificationFrame, TweenInfo.new(0.3), {BackgroundTransparency = 0.2}):Play()
+        task.delay(2, function()
+            notificationLabel.Text = "✅ NducHub đã sẵn sàng!"
+        end)
+    end
+end)
+
+-- Slider Distance Farm
+makeSlider(rightScroll, "🎯 Distance Farm", 10, 200, 50, function(v)
+    print("[Distance Farm]", v)
+end)
+
+-- TAB STATUS SERVER
+local statusPage = new("Frame", {Parent = content, Name = "Status Server", Size = UDim2.new(1,0,1,0), BackgroundTransparency = 1, Visible = false})
+
+local statusScroll = new("ScrollingFrame", {Parent = statusPage, Size = UDim2.new(1,-16,1,-16), Position = UDim2.new(0,8,0,8), BackgroundTransparency = 1, ScrollBarThickness = 6, CanvasSize = UDim2.new(0,0,0,0)})
+statusScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+local statusLayout = new("UIListLayout", {Parent = statusScroll, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0,6)})
+
+local statusItems = {
+    {Name = "🌑 Darkness", Keywords = {"Darkness"}},
+    {Name = "🥤 God's Chalice", Keywords = {"GodsChalice"}},
+    {Name = "⚔️ Elite Hunter", Keywords = {"EliteHunter"}},
+    {Name = "🎂 Cake Prince", Keywords = {"CakePrince"}},
+    {Name = "🏝️ Mirage Island", Keywords = {"MirageIsland"}},
+    {Name = "👁️ Tyrant Eyes", Keywords = {"TyrantEyes"}},
+    {Name = "🦊 Kitsune Island", Keywords = {"KitsuneIsland"}},
+    {Name = "🐋 Leviathan", Keywords = {"Leviathan"}},
+    {Name = "👑 Dough King", Keywords = {"DoughKing"}},
+    {Name = "⚡ Rip Indra", Keywords = {"RipIndra"}},
+}
+
+local statusRows = {}
+local serverTimeLabel = nil
+
+local function getServerUptime()
+    local uptime = Workspace.DistributedGameTime or 0
+    return string.format("%02d:%02d:%02d", math.floor(uptime/3600), math.floor((uptime%3600)/60), math.floor(uptime%60))
+end
+
+local function scanForKeyword(keywords)
+    for _, keyword in ipairs(keywords) do
+        if Workspace:FindFirstChild(keyword) then return true end
+    end
+    return false
+end
+
+local function makeStatusRow(parent, text)
+    local row = new("Frame", {Parent = parent, Size = UDim2.new(1,0,0,38), BackgroundColor3 = PANEL})
+    new("UICorner", {Parent = row, CornerRadius = UDim.new(0,6)})
+    local label = new("TextLabel", {Parent = row, Text = text, Font = Enum.Font.GothamSemibold, TextSize = 13, TextColor3 = TXT, BackgroundTransparency = 1, Position = UDim2.new(0,12,0,0), Size = UDim2.new(0.75,0,1,0), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center})
+    local statusIcon = new("TextLabel", {Parent = row, Text = "⏳", Font = Enum.Font.GothamBold, TextSize = 18, TextColor3 = YELLOW, BackgroundTransparency = 1, Position = UDim2.new(0.88,0,0,0), Size = UDim2.new(0.12,0,1,0), TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Center})
+    return {Row = row, StatusIcon = statusIcon}
+end
+
+local function updateAllStatus()
+    if serverTimeLabel then
+        serverTimeLabel.Text = "⏱️ Server Uptime: " .. getServerUptime()
+    end
+    for _, item in ipairs(statusItems) do
+        local row = statusRows[item.Name]
+        if row then
+            if scanForKeyword(item.Keywords) then
+                row.StatusIcon.Text = "✅"
+                row.StatusIcon.TextColor3 = GREEN
+            else
+                row.StatusIcon.Text = "❌"
+                row.StatusIcon.TextColor3 = RED
+            end
+        end
+    end
+end
+
+local timeRow = new("Frame", {Parent = statusScroll, Size = UDim2.new(1,0,0,45), BackgroundColor3 = PANEL_ALT})
+new("UICorner", {Parent = timeRow, CornerRadius = UDim.new(0,8)})
+serverTimeLabel = new("TextLabel", {Parent = timeRow, Text = "⏱️ Server Uptime: " .. getServerUptime(), Font = Enum.Font.GothamBold, TextSize = 13, TextColor3 = ACCENT, BackgroundTransparency = 1, Size = UDim2.new(1,0,1,0), TextXAlignment = Enum.TextXAlignment.Center})
+
+for _, item in ipairs(statusItems) do
+    local rowData = makeStatusRow(statusScroll, item.Name)
+    statusRows[item.Name] = rowData
+end
+
+spawn(function() while wait(5) do if statusPage and statusPage.Visible then updateAllStatus() end end end)
+
+-- CÁC TAB KHÁC
+local function makeEmptyPage(parent)
+    for _, child in ipairs(parent:GetChildren()) do child:Destroy() end
+end
+
+local TabNames = {"Info", "Main Farm", "Status Server", "Item", "Event", "Sea Event", "Fruit and Raid", "Race", "Teleport"}
+local TabButtons = {}
+local TabPages = {}
+local currentTab = nil
+
+local function setActiveTab(name)
+    currentTab = name
+    for k,btn in pairs(TabButtons) do
+        if k == name then
+            btn.BackgroundColor3 = ACCENT
+            btn.TextColor3 = Color3.fromRGB(20,20,20)
+        else
+            btn.BackgroundColor3 = Color3.fromRGB(35,35,35)
+            btn.TextColor3 = TXT
+        end
+    end
+    for k,page in pairs(TabPages) do
+        page.Visible = (k == name)
+    end
+    if name == "Status Server" then updateAllStatus() end
+end
+
+for _, name in ipairs(TabNames) do
+    local btn = new("TextButton", {Parent = tabScroller, Size = UDim2.new(0,120,0,32), BackgroundColor3 = Color3.fromRGB(35,35,35), Text = name, Font = Enum.Font.GothamSemibold, TextSize = 14, TextColor3 = TXT, AutoButtonColor = false})
+    new("UICorner", {Parent = btn, CornerRadius = UDim.new(0,8)})
+    TabButtons[name] = btn
+    
+    local page = nil
+    if name == "Info" then
+        page = infoPage
+    elseif name == "Main Farm" then
+        page = mainFarmPage
+    elseif name == "Status Server" then
+        page = statusPage
+    else
+        page = new("Frame", {Parent = content, Name = name, Size = UDim2.new(1,0,1,0), BackgroundTransparency = 1, Visible = false})
+        makeEmptyPage(page)
+    end
+    TabPages[name] = page
+    page.Parent = content
+    
+    btn.MouseButton1Click:Connect(function() setActiveTab(name) end)
+end
+
+local function updateCanvases()
+    tabScroller.CanvasSize = UDim2.new(0, tabListLayout.AbsoluteContentSize.X + 16, 0, 0)
+end
+tabListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvases)
+RunService.Heartbeat:Connect(updateCanvases)
+updateCanvases()
+
+setActiveTab("Info")
+
+-- Drag toggle button
+do
+    local dragging, dragStart, startPos = false
+    toggleButton.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = i.Position
+            startPos = toggleButton.Position
+            i.Changed:Connect(function() if i.UserInputState == Enum.UserInputState.End then dragging = false end end)
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(i)
+        if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = i.Position - dragStart
+            toggleButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+-- Drag window
+do
+    local dragging, dragStart, startPos = false
+    header.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = i.Position
+            startPos = window.Position
+            i.Changed:Connect(function() if i.UserInputState == Enum.UserInputState.End then dragging = false end end)
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(i)
+        if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = i.Position - dragStart
+            window.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+-- Menu toggle
+local menuOpen = true
+toggleButton.MouseButton1Click:Connect(function()
+    menuOpen = not menuOpen
+    if menuOpen then
+        window.Visible = true
+        TweenService:Create(window, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromOffset(650,620)}):Play()
+        TweenService:Create(toggleButton, TweenInfo.new(0.15), {BackgroundColor3 = ACCENT}):Play()
+    else
+        TweenService:Create(window, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.fromOffset(0,0)}):Play()
+        TweenService:Create(toggleButton, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(0,80,200)}):Play()
+        wait(0.15)
+        window.Visible = false
+    end
+end)
+
+-- Collapse/Expand
+local collapsed = false
+btnCollapse.MouseButton1Click:Connect(function()
+    if collapsed then
+        TweenService:Create(window, TweenInfo.new(0.14), {Size = UDim2.fromOffset(650,620)}):Play()
+        TweenService:Create(content, TweenInfo.new(0.12), {BackgroundTransparency = 0}):Play()
+        for _,v in pairs(window:GetChildren()) do v.Visible = true end
+        header.Visible = true
+        collapsed = false
+        wait(0.02)
+        setActiveTab(currentTab or "Info")
+    else
+        for k,v in pairs(content:GetChildren()) do v.Visible = false end
+        TweenService:Create(window, TweenInfo.new(0.12), {Size = UDim2.fromOffset(650,48)}):Play()
+        collapsed = true
+    end
+end)
+
+-- Intro animation
+window.Position = UDim2.new(0.5, -325, 0.5, -340)
+window.BackgroundTransparency = 1
+TweenService:Create(window, TweenInfo.new(0.18), {BackgroundTransparency = 0}):Play()
+TweenService:Create(window, TweenInfo.new(0.18), {Position = UDim2.new(0.5,-325,0.5,-310)}):Play()
+
+applyFixLag()
+print("NducHub loaded - Giao diện đã được sắp xếp gọn gàng với nút bật/tắt hình ô vuông!")
+print("Đã thêm chức năng Bring Mob (Kéo quái) - Có nút bật/tắt ở bảng Settings!")
