@@ -1,0 +1,688 @@
+-- Nduc Hub | Script for King Legacy
+-- Converted from OMG Hub | UI Library: Night Mystic Style
+-- Color: Blue | Logo ID: 88161224206829
+
+local Library = {}
+
+function Library:TweenInstance(Instance, Time, OldValue, NewValue)
+    local rz_Tween = game:GetService("TweenService"):Create(Instance, TweenInfo.new(Time, Enum.EasingStyle.Quad), { [OldValue] = NewValue })
+    rz_Tween:Play()
+    return rz_Tween
+end
+
+function Library:UpdateContent(Content, Title, Object)
+    if Content.Text ~= "" then
+        Title.Position = UDim2.new(0, 10, 0, 7)
+        Title.Size = UDim2.new(1, -60, 0, 16)
+        local MaxY = math.max(Content.TextBounds.Y + 15, 45)
+        Object.Size = UDim2.new(1, 0, 0, MaxY)
+    end
+end
+
+function Library:UpdateScrolling(Scroll, List)
+    List:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Scroll.CanvasSize = UDim2.new(0, 0, 0, List.AbsoluteContentSize.Y + 15)
+    end)
+end
+
+function Library:MakeConfig(Config, NewConfig)
+    for i, v in next, Config do
+        if not NewConfig[i] then
+            NewConfig[i] = v
+        end
+    end
+    return NewConfig
+end
+
+function Library:MakeDraggable(topbarobject, object)
+    local Dragging = nil
+    local DragInput = nil
+    local DragStart = nil
+    local StartPosition = nil
+    local function UpdatePos(input)
+        local Delta = input.Position - DragStart
+        local pos = UDim2.new(StartPosition.X.Scale, StartPosition.X.Offset + Delta.X, StartPosition.Y.Scale, StartPosition.Y.Offset + Delta.Y)
+        local Tween = game:GetService("TweenService"):Create(object, TweenInfo.new(0.2), { Position = pos })
+        Tween:Play()
+    end
+    topbarobject.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            Dragging = true
+            DragStart = input.Position
+            StartPosition = object.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    Dragging = false
+                end
+            end)
+        end
+    end)
+    topbarobject.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            DragInput = input
+        end
+    end)
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if input == DragInput and Dragging then
+            UpdatePos(input)
+        end
+    end)
+end
+
+-- Khởi tạo UI chính
+local MainUI = Library:NewWindow({
+    Title = "Nduc Hub",
+    Description = "King Legacy | Auto Farm"
+})
+
+-- Tạo các tab
+local FarmTab = MainUI:T("Farm")
+local BossTab = MainUI:T("Boss/Sea")
+local RaidTab = MainUI:T("Raid")
+local TeleTab = MainUI:T("Teleport")
+local ShopTab = MainUI:T("Shop")
+local ConfigTab = MainUI:T("Config")
+
+-- ========== SETTINGS GLOBAL ==========
+_G.Settings = {
+    Main = {
+        SelectMob = '',
+        SelectBoss = '',
+        AutoFarm = false,
+        AutoFarmMob = false,
+        AutoFarmBoss = false,
+        PassiveTree = false,
+        Minion = false,
+        AutoCandy1 = false,
+        AutoCandy2 = false,
+        AutoCandy3 = false,
+        ChestMinion = false,
+        FarmNear = false,
+    },
+    Teleport = {
+        AutoStat = false,
+        SelectStat = 'Melee',
+        SelectNPC = '',
+        SelectIsland = '',
+    },
+    Boss = {
+        AutoLord = false,
+        AutoMonster = false,
+        AutoJack = false,
+        AutoOden = false,
+        AutoBigmom = false,
+        AutoSeaBeast = false,
+        AutoHydraKing = false,
+        AutoGhost = false,
+        AutoLordSaber = false,
+        AutoBushido = false,
+        AutoSkullKing = false,
+        AutoChaos = false,
+        AutoDeepSea = false,
+        AutoInferno = false,
+        AutoAbyss = false,
+        AutoDragon = false,
+    },
+    Raid = {
+        RaidFarm = false,
+        SafeMode = false,
+    },
+    Shop = {
+        TPFruit = false,
+        AutoStore = false,
+        AutoBuy = false,
+        BuyFruitInShop = '',
+        SelectHaki = 'Arc',
+        RamdomFruit = false,
+        BuyChest = false,
+        SelectKey = 'Copper Key',
+        SelectOpen = 'Open1',
+    },
+    Config = {
+        SelectWeapon = 'Melee',
+        SelectMethod = 'Upper',
+        DistanceMon = 8,
+        AutoSkill = true,
+        SelectSkill = 'Z',
+        BusoHaki = true,
+        BringMob = true,
+        KenHaki = false,
+    },
+}
+
+local _Name = game:GetService('MarketplaceService'):GetProductInfo(game.PlaceId).Name
+local u51 = game.PlaceId == 4520749081
+local u52 = game.PlaceId == 6381829480
+local u53 = game.PlaceId == 15759515082
+local v54 = game.PlaceId == 5931540094
+
+-- ========== HÀM CHÍNH (TỪ OMG HUB) ==========
+function CheckLv()
+    MyLevel = game.Players.LocalPlayer.PlayerStats.lvl.Value
+    if u51 then
+        if MyLevel == 1 or MyLevel <= 9 then Mon = 'Soldier [Lv. 1]'; NameQuest = 'Kill 4 Soldiers'
+        elseif MyLevel == 10 or MyLevel <= 19 then Mon = 'Clown Pirate [Lv. 10]'; NameQuest = 'Kill 5 Clown Pirates'
+        elseif MyLevel == 20 or MyLevel <= 29 then Mon = 'Smoky [Lv. 20]'; NameQuest = 'Kill 1 Smoky'
+        elseif MyLevel == 30 or MyLevel <= 49 then Mon = 'Tashi [Lv. 30]'; NameQuest = 'Kill 1 Tashi'
+        elseif MyLevel == 50 or MyLevel <= 74 then Mon = 'Clown Swordman [Lv. 50]'; NameQuest = 'Kill 6 Clown Swordman'
+        elseif MyLevel == 75 or MyLevel <= 99 then Mon = 'The Clown [Lv. 75]'; NameQuest = 'Kill 1 The Clown'
+        elseif MyLevel == 100 or MyLevel <= 119 then Mon = 'Commander [Lv. 100]'; NameQuest = 'Kill 4 Commander'
+        elseif MyLevel == 120 or MyLevel <= 144 then Mon = 'Captain [Lv. 120]'; NameQuest = 'Kill 1 Captain'
+        elseif MyLevel == 145 or MyLevel <= 179 then Mon = 'The Barbaric [Lv. 145]'; NameQuest = 'Kill 1 The Barbaric'
+        elseif MyLevel == 180 or MyLevel <= 199 then Mon = 'Fighter Fishman [Lv. 180]'; NameQuest = 'Kill 4 Fighter Fishmans'
+        elseif MyLevel == 200 or MyLevel <= 229 then Mon = 'Karate Fishman [Lv. 200]'; NameQuest = 'Kill 1 Karate Fishman'
+        elseif MyLevel == 230 or MyLevel <= 249 then Mon = 'Shark Man [Lv. 230]'; NameQuest = 'Kill 1 Shark Man'
+        elseif MyLevel == 250 or MyLevel <= 299 then Mon = 'Trainer Chef [Lv. 250]'; NameQuest = 'Kill 4 Trainer Chef'
+        elseif MyLevel == 300 or MyLevel <= 349 then Mon = 'Dark Leg [Lv. 300]'; NameQuest = 'Kill 1 Dark Leg'
+        elseif MyLevel == 350 or MyLevel <= 399 then Mon = 'Dory [Lv. 350]'; NameQuest = 'Kill 1 Dory'
+        elseif MyLevel == 400 or MyLevel <= 449 then Mon = 'Snow Soldier [Lv. 400]'; NameQuest = 'Kill 5 Snow Soldier'
+        elseif MyLevel == 450 or MyLevel <= 499 then Mon = 'King Snow [Lv. 450]'; NameQuest = 'Kill 1 King Snow'
+        elseif MyLevel == 500 or MyLevel <= 524 then Mon = 'Little Dear [Lv. 500]'; NameQuest = 'Kill 1 Little Dear'
+        elseif MyLevel == 525 or MyLevel <= 574 then Mon = 'Candle Man [Lv. 525]'; NameQuest = 'Kill 1 Candle Man'
+        elseif MyLevel == 575 or MyLevel <= 624 then Mon = 'Sand Bandit [Lv. 575]'; NameQuest = 'Kill 4 Sand Bandit'
+        elseif MyLevel == 625 or MyLevel <= 674 then Mon = 'Bomb Man [Lv. 625]'; NameQuest = 'Kill 1 Bomb Man'
+        elseif MyLevel == 675 or MyLevel <= 724 then Mon = 'Desert Marauder [Lv. 675]'; NameQuest = 'Kill 4 Desert Marauder'
+        elseif MyLevel == 725 or MyLevel <= 799 then Mon = 'King of Sand [Lv. 725]'; NameQuest = 'Kill 1 King of Sand'
+        elseif MyLevel == 800 or MyLevel <= 849 then Mon = 'Sky Soldier [Lv. 800]'; NameQuest = 'Kill 4 Sky Soldier'
+        elseif MyLevel == 850 or MyLevel <= 899 then Mon = 'Ball Man [Lv. 850]'; NameQuest = 'Kill 1 Ball Man'
+        elseif MyLevel == 900 or MyLevel <= 949 then Mon = 'Cloud Warrior [Lv. 900]'; NameQuest = 'Kill 4 Cloud Warrior'
+        elseif MyLevel == 950 or MyLevel <= 999 then Mon = 'Rumble Man [Lv. 950]'; NameQuest = 'Kill 1 Rumble Man'
+        elseif MyLevel == 1000 or MyLevel <= 1049 then Mon = 'Elite Soldier [Lv. 1000]'; NameQuest = 'Kill 4 Elite Soldiers'
+        elseif MyLevel == 1050 or MyLevel <= 1099 then Mon = 'High-class Soldier [Lv. 1050]'; NameQuest = 'Kill 4 High-class Soldier'
+        elseif MyLevel == 1100 or MyLevel <= 1149 then Mon = 'Leader [Lv. 1100]'; NameQuest = 'Kill 1 Leader'
+        elseif MyLevel == 1150 or MyLevel <= 1199 then Mon = 'Pasta [Lv. 1150]'; NameQuest = 'Kill 1 Pasta'
+        elseif MyLevel == 1200 or MyLevel <= 1249 then Mon = 'Naval personnel [Lv. 1200]'; NameQuest = 'Kill 4 Naval personnel'
+        elseif MyLevel == 1250 or MyLevel <= 1299 then Mon = 'Wolf [Lv. 1250]'; NameQuest = 'Kill 1 Wolf'
+        elseif MyLevel == 1300 or MyLevel <= 1349 then Mon = 'Giraffe [Lv. 1300]'; NameQuest = 'Kill 1 Giraffe'
+        elseif MyLevel == 1350 or MyLevel <= 1399 then Mon = 'Nautical soldier [Lv. 1350]'; NameQuest = 'Kill 4 Nautical soldier'
+        elseif MyLevel == 1400 or MyLevel <= 1449 then Mon = 'Naval soldier [Lv. 1400]'; NameQuest = 'Kill 4 Naval soldier'
+        elseif MyLevel == 1450 or MyLevel <= 1499 then Mon = 'Leo [Lv. 1450]'; NameQuest = 'Kill 1 Leo'
+        elseif MyLevel == 1500 or MyLevel <= 1549 then Mon = 'Zombie [Lv. 1500]'; NameQuest = 'Kill 5 Zombies'
+        elseif MyLevel == 1550 or MyLevel <= 1599 then Mon = 'Elite Zombie [Lv. 1550]'; NameQuest = 'Kill 4 Elite Zombies'
+        elseif MyLevel == 1600 or MyLevel <= 1649 then Mon = 'Revenant [Lv. 1600]'; NameQuest = 'Kill 4 Revenant'
+        elseif MyLevel == 1650 or MyLevel <= 1699 then Mon = 'Shadow Master [Lv. 1650]'; NameQuest = 'Kill 1 Shadow Master'
+        elseif MyLevel == 1700 or MyLevel <= 1749 then Mon = 'New World Pirate [Lv. 1700]'; NameQuest = 'Kill 4 New World Pirates'
+        elseif MyLevel == 1750 or MyLevel <= 1799 then Mon = 'Cutlass Pirate [Lv. 1750]'; NameQuest = 'Kill 4 Cutlass Pirates'
+        elseif MyLevel == 1800 or MyLevel <= 1849 then Mon = 'Rear Admiral [Lv. 1800]'; NameQuest = 'Kill 4 Rear Admirals'
+        elseif MyLevel == 1850 or MyLevel <= 1924 then Mon = 'True Karate Fishman [Lv. 1850]'; NameQuest = 'Kill 1 True Karate Fishman'
+        elseif MyLevel == 1925 or MyLevel <= 1999 then Mon = 'Quake Woman [Lv. 1925]'; NameQuest = 'Kill 1 Quake Woman'
+        elseif MyLevel == 2000 or MyLevel <= 2049 then Mon = 'Fishman [Lv. 2000]'; NameQuest = 'Kill 4 Fishmans'
+        elseif MyLevel == 2050 or MyLevel <= 2099 then Mon = 'Combat Fishman [Lv. 2050]'; NameQuest = 'Kill 1 Combat Fishman'
+        elseif MyLevel == 2100 or MyLevel <= 2149 then Mon = 'Sword Fishman [Lv. 2100]'; NameQuest = 'Kill 1 Sword Fishman'
+        elseif MyLevel == 2150 or MyLevel <= 2199 then Mon = 'Soldier Fishman [Lv. 2150]'; NameQuest = 'Kill 4 Soldier Fishman'
+        elseif MyLevel == 2200 or MyLevel <= 22949 then Mon = 'Seasoned Fishman [Lv. 2200]'; NameQuest = 'Kill 1 Seasoned Fishman'
+        end
+    end
+    if u52 then
+        if MyLevel == 2250 or MyLevel <= 2299 then Mon = 'Beast Pirate [Lv. 2250]'; NameQuest = 'Kill 4 Beast Pirates'
+        elseif MyLevel == 2300 or MyLevel <= 2349 then Mon = 'Beast Swordman [Lv. 2300]'; NameQuest = 'Kill 4 Beast Swordman'
+        elseif MyLevel == 2350 or MyLevel <= 2399 then Mon = 'Gazelle Man [Lv. 2350]'; NameQuest = 'Kill 1 Gazelle Man'
+        elseif MyLevel == 2400 or MyLevel <= 2449 then Mon = 'Bandit Beast Pirate [Lv. 2400]'; NameQuest = 'Kill 4 Bandit Beast Pirates'
+        elseif MyLevel == 2450 or MyLevel <= 2499 then Mon = 'Powerful Beast Pirate [Lv. 2450]'; NameQuest = 'Kill 4 Powerful Beast Pirates'
+        elseif MyLevel == 2500 or MyLevel <= 2549 then Mon = 'Violet Samurai [Lv. 2500]'; NameQuest = 'Kill 1 Violet Samurai'
+        elseif MyLevel == 2550 or MyLevel <= 2599 then Mon = 'Duke [Lv. 2550]'; NameQuest = 'Kill 1 Duke'
+        elseif MyLevel == 2600 or MyLevel <= 2649 then Mon = 'Magician [Lv. 2600]'; NameQuest = 'Kill 1 Magician'
+        elseif MyLevel == 2650 or MyLevel <= 2699 then Mon = 'Kitsune Samurai [Lv. 2650]'; NameQuest = 'Kill 1 Kitsune Samurai'
+        elseif MyLevel == 2700 or MyLevel <= 2749 then Mon = 'Elite Beast Pirate [Lv. 2700]'; NameQuest = 'Kill 4 Elite Beast Pirates'
+        elseif MyLevel == 2750 or MyLevel <= 2799 then Mon = 'Bear Man [Lv. 2750]'; NameQuest = 'Kill 1 Bear Man'
+        elseif MyLevel == 2800 or MyLevel <= 2849 then Mon = 'Bean [Lv. 2800]'; NameQuest = 'Kill 1 Bean'
+        elseif MyLevel == 2850 or MyLevel <= 2899 then Mon = 'Meji [Lv. 2850]'; NameQuest = 'Kill 1 Meji'
+        elseif MyLevel == 2900 or MyLevel <= 2949 then Mon = 'Petra [Lv. 2900]'; NameQuest = 'Kill 1 Petra'
+        elseif MyLevel == 2950 or MyLevel <= 2999 then Mon = 'Kappa [Lv. 2950]'; NameQuest = 'Kill 1 Kappa'
+        elseif MyLevel == 3000 or MyLevel <= 3049 then Mon = 'Joey [Lv. 3000]'; NameQuest = 'Kill 1 Joey'
+        elseif MyLevel == 3050 or MyLevel <= 3099 then Mon = 'Skull Pirate [Lv. 3050]'; NameQuest = 'Kill 4 Skull Pirates'
+        elseif MyLevel == 3100 or MyLevel <= 3149 then Mon = 'Elite Skeleton [Lv. 3100]'; NameQuest = 'Kill 1 Elite Skeleton'
+        elseif MyLevel == 3150 or MyLevel <= 3174 then Mon = 'Anubis [Lv. 3150]'; NameQuest = 'Kill 1 Anubis'
+        elseif MyLevel == 3175 or MyLevel <= 3189 then Mon = 'Pharaoh [Lv. 3175]'; NameQuest = 'Kill 1 Pharaoh'
+        elseif MyLevel == 3190 or MyLevel <= 3199 then Mon = 'Flame User [Lv. 3200]'; NameQuest = 'Kill 1 Flame User'
+        elseif MyLevel == 3200 or MyLevel <= 3224 then Mon = 'Chess Soldier [Lv. 3200]'; NameQuest = 'Kill 4 Chess Soldiers'
+        elseif MyLevel == 3225 or MyLevel <= 3249 then Mon = 'Sunken Vessel [Lv. 3225]'; NameQuest = 'Kill 1 Sunken Vessel'
+        elseif MyLevel == 3250 or MyLevel <= 3274 then Mon = 'Biscuit Man [Lv. 3250]'; NameQuest = 'Kill 1 Biscuit Man'
+        elseif MyLevel == 3275 or MyLevel <= 3299 then Mon = 'Dough Master [Lv. 3275]'; NameQuest = 'Kill 1 Dough Master'
+        elseif MyLevel == 3300 or MyLevel <= 3324 then Mon = 'Azlan [Lv. 3300]'; NameQuest = 'Kill 4 Azlan'
+        elseif MyLevel == 3325 or MyLevel <= 3399 then Mon = 'The Volcano [Lv. 3325]'; NameQuest = 'Kill 4 The Volcano'
+        elseif MyLevel == 3400 or MyLevel <= 3424 then Mon = 'Dark Beard Servant [Lv. 3400]'; NameQuest = 'Kill 4 Dark Beard Servant'
+        elseif MyLevel == 3425 or MyLevel <= 3449 then Mon = 'Supreme Swordman [Lv. 3425]'; NameQuest = 'Kill 1 Supreme Swordman'
+        elseif MyLevel == 3450 or MyLevel <= 3499 then Mon = 'Sally [Lv. 3450]'; NameQuest = 'Kill 1 Sally'
+        elseif MyLevel == 3500 or MyLevel <= 3524 then Mon = 'Vice Admiral [Lv. 3500]'; NameQuest = 'Kill 5 Vice Admiral'
+        elseif MyLevel == 3525 or MyLevel <= 3549 then Mon = 'Pondere [Lv. 3525]'; NameQuest = 'Kill 1 Pondere'
+        elseif MyLevel == 3550 or MyLevel <= 3599 then Mon = 'Hefty [Lv. 3550]'; NameQuest = 'Kill 1 Hefty'
+        elseif MyLevel == 3600 or MyLevel <= 3624 then Mon = 'Fiore Gladiator [Lv. 3600]'; NameQuest = 'Kill 6 Fiore Gladiator'
+        elseif MyLevel == 3625 or MyLevel <= 3649 then Mon = 'Fiore Fighter [Lv. 3625]'; NameQuest = 'Kill 6 Fiore Fighter'
+        elseif MyLevel == 3650 or MyLevel <= 3674 then Mon = 'Fiore Pirate [Lv. 3650]'; NameQuest = 'Kill 7 Fiore Pirate'
+        elseif MyLevel == 3675 or MyLevel <= 3699 then Mon = 'Lomeo [Lv. 3675]'; NameQuest = 'Kill 1 Lomeo'
+        elseif MyLevel == 3700 or MyLevel <= 3724 then Mon = 'Prince Aria [Lv. 3700]'; NameQuest = 'Kill 1 Prince Aria'
+        elseif MyLevel == 3725 or MyLevel <= 3749 then Mon = 'Devastate [Lv. 3725]'; NameQuest = 'Kill 1 Devastate'
+        elseif MyLevel == 3750 or MyLevel <= 3774 then Mon = 'Physicus [Lv. 3750]'; NameQuest = 'Kill 1 Physicus'
+        elseif MyLevel == 3775 or MyLevel <= 3799 then Mon = 'Floffy [Lv. 3775]'; NameQuest = 'Kill 1 Floffy'
+        elseif MyLevel == 3800 or MyLevel <= 3849 then Mon = 'Dead Troupe [Lv. 3800]'; NameQuest = 'Kill 4 Dead Troupe'
+        elseif MyLevel == 3850 or MyLevel <= 3949 then Mon = 'Dead Troupe Captain [Lv. 3850]'; NameQuest = 'Kill 4 Dead Troupe Captain'
+        elseif MyLevel == 3950 or MyLevel <= 49990 then Mon = 'Ryu [Lv. 3975]'; NameQuest = 'Kill 1 Ryu'
+        end
+    end
+    if u53 then
+        if MyLevel == 4000 or MyLevel <= 4049 then Mon = 'Deep Diver [Lv. 4000]'; NameQuest = 'Kill 4 Deep Diver'
+        elseif MyLevel == 4050 or MyLevel <= 4099 then Mon = 'Fugitive [Lv. 4050]'; NameQuest = 'Kill Fugitive'
+        elseif MyLevel == 4100 or MyLevel <= 4149 then Mon = 'Deep one Villager [Lv. 4100]'; NameQuest = 'Kill 4 Deep one Villager'
+        elseif MyLevel == 4150 or MyLevel <= 4199 then Mon = 'Fishman Guardian [Lv. 4150]'; NameQuest = 'Kill 6 Fishman Guardian'
+        elseif MyLevel == 4200 or MyLevel <= 4249 then Mon = 'The deep one [Lv. 4200]'; NameQuest = 'Kill The deep one'
+        elseif MyLevel == 4250 or MyLevel <= 4299 then Mon = "Fishman King's Guard [Lv. 4250]"; NameQuest = "Kill Fishman King's Guard"
+        elseif MyLevel == 4300 or MyLevel <= 4324 then Mon = 'Jungle Gorilla [Lv. 4300]'; NameQuest = 'Kill 5 Jungle Gorilla'
+        elseif MyLevel == 4325 or MyLevel <= 4349 then Mon = 'Wilderness Gorilla [Lv. 4325]'; NameQuest = 'Kill 5 Wilderness Gorilla'
+        elseif MyLevel == 4350 or MyLevel <= 4374 then Mon = 'Jungle Ape [Lv. 4350]'; NameQuest = 'Kill 5 Jungle Ape'
+        elseif MyLevel == 4375 or MyLevel <= 4399 then Mon = 'Cyborg Gorilla [Lv. 4375]'; NameQuest = 'Kill 1 Cyborg Gorilla'
+        elseif MyLevel == 4400 or MyLevel <= 4449 then Mon = 'Ripcurrent Raider [Lv. 4400]'; NameQuest = 'Kill 1 Ripcurrent Raider'
+        elseif MyLevel == 4450 or MyLevel <= 4499 then Mon = 'Tidal Warrior [Lv. 4450]'; NameQuest = 'Kill 1 Tidal Warrior'
+        elseif MyLevel == 4500 or MyLevel <= 4549 then Mon = 'Ocean Gladiator [Lv. 4500]'; NameQuest = 'Kill 1 Ocean Gladiator'
+        elseif MyLevel == 4550 or MyLevel <= 4599 then Mon = 'Deepfire Combatant [Lv. 4550]'; NameQuest = 'Kill 4 Deepfire Combatant'
+        elseif MyLevel == 4600 or MyLevel <= 4649 then Mon = 'Electro Abyss Warrior [Lv. 4600]'; NameQuest = 'Kill 1 Electro Abyss Warrior'
+        elseif MyLevel == 4650 or MyLevel <= 4699 then Mon = 'Inferno Diver [Lv. 4650]'; NameQuest = 'Kill 1 Inferno Diver'
+        elseif MyLevel == 4700 or MyLevel <= 4749 then Mon = 'Tempest Tidebreaker [Lv. 4700]'; NameQuest = 'Kill 1 Tempest Tidebreaker'
+        elseif MyLevel == 4750 or MyLevel <= 49900 then Mon = 'Abyssal Swordsman [Lv. 4750]'; NameQuest = 'Kill 1 Abyssal Swordsman'
+        end
+    end
+end
+
+function CheckNPC()
+    MyLevel = game.Players.LocalPlayer.PlayerStats.lvl.Value
+    if u51 then
+        if MyLevel == 1 or MyLevel <= 49 then NPC = 'Starter Island Quest'
+        elseif MyLevel == 50 or MyLevel <= 99 then NPC = 'Pirate Island Quest'
+        elseif MyLevel == 100 or MyLevel <= 179 then NPC = 'Soldier Town Quest'
+        elseif MyLevel == 180 or MyLevel <= 249 then NPC = 'Shark Island Quest'
+        elseif MyLevel == 250 or MyLevel <= 399 then NPC = 'Chef Ship Quest'
+        elseif MyLevel == 400 or MyLevel <= 524 then NPC = 'Snow Island Quest'
+        elseif MyLevel == 525 or MyLevel <= 799 then NPC = 'Desert Island Quest'
+        elseif MyLevel == 800 or MyLevel <= 999 then NPC = 'Skyland Quest'
+        elseif MyLevel == 1000 or MyLevel <= 1199 then NPC = 'Bubbleland Quest'
+        elseif MyLevel == 1200 or MyLevel <= 1499 then NPC = 'Lobby Island Quest'
+        elseif MyLevel == 1500 or MyLevel <= 1699 then NPC = 'Zombie Island Quest'
+        elseif MyLevel == 1700 or MyLevel <= 1999 then NPC = 'War Island Quest'
+        elseif MyLevel == 2000 or MyLevel <= 4400 then NPC = 'Fishland Quest'
+        end
+    end
+    if u52 then
+        if MyLevel == 2200 or MyLevel <= 2399 then NPC = 'Japan 1 Quest'
+        elseif MyLevel == 2500 or MyLevel <= 2549 then NPC = 'Japan 2 Quest'
+        elseif MyLevel == 2650 or MyLevel <= 2699 then NPC = 'Japan 3 Quest'
+        elseif MyLevel == 2800 or MyLevel <= 2849 then NPC = 'Japan 4 Quest'
+        elseif MyLevel == 2900 or MyLevel <= 2949 then NPC = 'Japan 5 Quest'
+        elseif MyLevel == 3000 or MyLevel <= 3049 then NPC = 'Japan 6 Quest'
+        elseif MyLevel == 3100 or MyLevel <= 3149 then NPC = 'Skull Island Quest'
+        elseif MyLevel == 3190 or MyLevel <= 3199 then NPC = 'Desert 2nd Quest'
+        elseif MyLevel == 3250 or MyLevel <= 3274 then NPC = 'Loaf 1 Quest'
+        elseif MyLevel == 3275 or MyLevel <= 3299 then NPC = 'Loaf 2 Quest'
+        elseif MyLevel == 3375 or MyLevel <= 3399 then NPC = 'Shred Endangering Quest'
+        elseif MyLevel == 3450 or MyLevel <= 3499 then NPC = 'Skull Pirate Island Quest'
+        elseif MyLevel == 3525 or MyLevel <= 3549 then NPC = 'Soldier Head Quater 1 Quest'
+        elseif MyLevel == 3550 or MyLevel <= 3599 then NPC = 'Soldier Head Quater 2 Quest'
+        elseif MyLevel == 3625 or MyLevel <= 3649 then NPC = 'Fiore 1 Quest'
+        elseif MyLevel == 3675 or MyLevel <= 3699 then NPC = 'Fiore 2 Quest'
+        elseif MyLevel == 3775 or MyLevel <= 3799 then NPC = 'Fiore 3 Quest'
+        elseif MyLevel == 3800 or MyLevel <= 4700 then NPC = 'Fiore 4 Quest'
+        end
+    end
+    if u53 then
+        if MyLevel == 4000 or MyLevel <= 4149 then NPC = 'The Unearthly 1 Quest'
+        elseif MyLevel == 4250 or MyLevel <= 4299 then NPC = 'The Unearthly 2 Quest'
+        elseif MyLevel == 4375 or MyLevel <= 4399 then NPC = 'The Shallow 1 Quest'
+        elseif MyLevel == 4500 or MyLevel <= 4549 then NPC = 'Drakenhold Fortress Quest'
+        elseif MyLevel == 4650 or MyLevel <= 4699 then NPC = 'Forgotten Coliseum Quest'
+        elseif MyLevel == 4750 or MyLevel <= 4900 then NPC = 'Forgotten Coliseum Quest 2'
+        end
+    end
+end
+
+function EquipWeapon(p57)
+    if not _G.NotAutoEquip then
+        local _Backpack = game.Players.LocalPlayer.Backpack
+        if _Backpack:FindFirstChild(p57) then
+            local v59 = _Backpack:FindFirstChild(p57)
+            wait(0.1)
+            game.Players.LocalPlayer.Character.Humanoid:EquipTool(v59)
+        end
+    end
+end
+
+local _HumanoidRootPart = game.Players.LocalPlayer.Character:FindFirstChild('HumanoidRootPart')
+
+function TP(p88)
+    if _HumanoidRootPart then
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = p88
+    end
+end
+
+local u62 = nil
+local u63 = nil
+
+function ValueMob(p64)
+    local v65, v66, v67 = pairs(workspace.Monster.Mon:GetChildren())
+    local v68 = 0
+    while true do
+        local v69
+        v67, v69 = v65(v66, v67)
+        if v67 == nil then break end
+        if v69.Name == p64.Name then v68 = v68 + 1 end
+    end
+    return v68
+end
+
+function BringMob(p70)
+    pcall(function()
+        if u62 ~= p70 then u62 = p70; u63 = p70.PrimaryPart.CFrame end
+        if ValueMob(p70) > 1 then
+            local v71, v72, v73 = pairs(workspace.Monster.Mon:GetChildren())
+            while true do
+                local v74
+                v73, v74 = v71(v72, v73)
+                if v73 == nil then break end
+                if v74.Name == p70.Name and (p70:FindFirstChild('HumanoidRootPart') and (v74:FindFirstChild('HumanoidRootPart') and v74.Humanoid.Health > 0) and game.Players.LocalPlayer.Character:FindFirstChild('HumanoidRootPart')) then
+                    v74.PrimaryPart.CFrame = u63
+                    sethiddenproperty(game.Players.LocalPlayer, 'SimulationRadius', math.huge)
+                end
+            end
+        end
+    end)
+end
+
+spawn(function()
+    while wait() do
+        pcall(function()
+            if _G.Settings.Config.SelectMethod ~= 'Behind' then
+                if _G.Settings.Config.SelectMethod ~= 'Below' then
+                    if _G.Settings.Config.SelectMethod ~= 'Upper' then MethodFarm = CFrame.new(0, 0, 0)
+                    else MethodFarm = CFrame.new(0, _G.Settings.Config.DistanceMon, 0) * CFrame.Angles(math.rad(-90), 0, 0) end
+                else MethodFarm = CFrame.new(0, -_G.Settings.Config.DistanceMon, 0) * CFrame.Angles(math.rad(90), 0, 0) end
+            else MethodFarm = CFrame.new(0, 0, _G.Settings.Config.DistanceMon) end
+        end)
+    end
+end)
+
+spawn(function()
+    while wait() do
+        pcall(function()
+            local _PlayerStats = game.Players.LocalPlayer.PlayerStats
+            local _SelectWeapon = _G.Settings.Config.SelectWeapon
+            if _SelectWeapon == 'Melee' then WeaponFarm = _PlayerStats.FightingStyle.Value
+            elseif _SelectWeapon == 'Sword' then WeaponFarm = _PlayerStats.SwordName.Value
+            elseif _SelectWeapon == 'Fruit' then WeaponFarm = _PlayerStats.DFName.Value end
+        end)
+    end
+end)
+
+_G.AutoSkill = false
+spawn(function()
+    while wait(0.2) do
+        if _G.AutoSkill and (_G.Settings.Config.SelectWeapon == 'Fruit' or _G.Settings.Config.AutoSkill) then
+            local skill = _G.Settings.Config.SelectSkill
+            local function press(k) game:GetService('VirtualInputManager'):SendKeyEvent(true, k, false, game); task.wait(0.1); game:GetService('VirtualInputManager'):SendKeyEvent(false, k, false, game); task.wait(0.1) end
+            if skill == 'Z' then press('Z')
+            elseif skill == 'Z,X' then press('Z'); press('X')
+            elseif skill == 'Z,X,C' then press('Z'); press('X'); press('C')
+            elseif skill == 'Z,X,C,V' then press('Z'); press('X'); press('C'); press('V')
+            elseif skill == 'Z,X,C,V,E' then press('Z'); press('X'); press('C'); press('V'); press('E') end
+        end
+    end
+end)
+
+spawn(function()
+    while wait() do
+        if _G.Settings.Main.AutoFarm or _G.Settings.Main.AutoFarmMob or _G.Settings.Main.AutoFarmBoss or _G.Settings.Main.FarmNear then
+            pcall(function()
+                local _SelectWeapon2 = _G.Settings.Config.SelectWeapon
+                if _SelectWeapon2 == 'Melee' then game.ReplicatedStorage.Chest.Remotes.Functions.SkillAction:InvokeServer('FS_' .. WeaponFarm .. '_M1')
+                elseif _SelectWeapon2 == 'Sword' then game.ReplicatedStorage.Chest.Remotes.Functions.SkillAction:InvokeServer('SW_' .. WeaponFarm .. '_M1') end
+                if _G.Settings.Config.AutoSkill then _G.AutoSkill = true end
+            end)
+        else _G.AutoSkill = false end
+    end
+end)
+
+function Stat(p92) game:GetService('Players').LocalPlayer.PlayerGui.MainGui.StarterFrame.StatsFrame.RemoteEvent:FireServer(p92, 1) end
+
+spawn(function()
+    while wait() do
+        if _G.Settings.Main.AutoFarm then
+            pcall(function()
+                CheckLv(); CheckNPC()
+                if game.Players.LocalPlayer.CurrentQuest.Value ~= NameQuest then
+                    game:GetService('ReplicatedStorage').Chest.Remotes.Functions.Quest:InvokeServer('take', NameQuest)
+                end
+                local v95, v96, v97 = ipairs(game.Workspace.Monster:GetDescendants())
+                local v98 = false
+                while true do
+                    local v99
+                    v97, v99 = v95(v96, v97)
+                    if v97 == nil then
+                        if not v98 then
+                            TP(game.Workspace.AllNPC[NPC].CFrame)
+                            TP(game.ReplicatedStorage.MOB[Mon].WorldPivot * CFrame.new(0, 0.5, 0))
+                        end
+                        return
+                    end
+                    if v99.Name == Mon and (v99:FindFirstChild('Humanoid') and (v99:FindFirstChild('HumanoidRootPart') and v99.Humanoid.Health > 0)) then v98 = true end
+                end
+                task.wait()
+                if _G.Settings.Config.BringMob then BringMob(v99) end
+                TP(v99.HumanoidRootPart.CFrame * MethodFarm)
+                EquipWeapon(WeaponFarm)
+            end)
+        end
+    end
+end)
+
+spawn(function()
+    while wait() do
+        if _G.Settings.Main.AutoFarmMob then
+            pcall(function()
+                local v216, v217, v218 = ipairs(game.Workspace.Monster:GetDescendants())
+                local v219 = false
+                while true do
+                    local v220
+                    v218, v220 = v216(v217, v218)
+                    if v218 == nil then
+                        if not v219 then TP(game.ReplicatedStorage.MOB[_G.Settings.Main.SelectMob].WorldPivot * CFrame.new(0, 0.5, 0)) end
+                        return
+                    end
+                    if v220.Name == _G.Settings.Main.SelectMob and (v220:FindFirstChild('Humanoid') and (v220:FindFirstChild('HumanoidRootPart') and v220.Humanoid.Health > 0)) then v219 = true end
+                end
+                task.wait()
+                if _G.Settings.Config.BringMob then BringMob(v220) end
+                TP(v220.HumanoidRootPart.CFrame * MethodFarm)
+                EquipWeapon(WeaponFarm)
+            end)
+        end
+    end
+end)
+
+spawn(function()
+    while wait() do
+        if _G.Settings.Main.AutoFarmBoss then
+            pcall(function()
+                local v221, v222, v223 = ipairs(game.Workspace.Monster.Boss:GetChildren())
+                local v224 = false
+                while true do
+                    local v225
+                    v223, v225 = v221(v222, v223)
+                    if v223 == nil then break end
+                    if v225.Name == _G.Settings.Main.SelectBoss and (v225:FindFirstChild('Humanoid') and (v225:FindFirstChild('HumanoidRootPart') and v225.Humanoid.Health > 0)) then
+                        v224 = true
+                        repeat
+                            task.wait()
+                            TP(v225.HumanoidRootPart.CFrame * MethodFarm)
+                            EquipWeapon(WeaponFarm)
+                        until not _G.Settings.Main.AutoFarmBoss or (not v225.Parent or v225.Humanoid.Health <= 0)
+                    end
+                end
+                if not v224 then TP(game.ReplicatedStorage.MOB[_G.Settings.Main.SelectBoss].WorldPivot * CFrame.new(0, 0.5, 0)) end
+            end)
+        end
+    end
+end)
+
+spawn(function()
+    while wait(2) do
+        if _G.Settings.Config.BusoHaki then
+            pcall(function()
+                if not workspace.CharacterWorkshop:FindFirstChild(game.Players.LocalPlayer.Name .. 'ArmamentGroup') then
+                    game:GetService('ReplicatedStorage').Chest.Remotes.Events.Armament:FireServer()
+                end
+            end)
+        end
+    end
+end)
+
+spawn(function()
+    while wait() do
+        if _G.Settings.Teleport.AutoStat and game.Players.LocalPlayer.PlayerStats.Points.Value > 1 then
+            local stat = _G.Settings.Teleport.SelectStat
+            if stat == 'Melee, Defense' then Stat('Melee'); wait(0.2); Stat('Defense')
+            elseif stat == 'Sword, Defense' then Stat('Sword'); wait(0.2); Stat('Defense')
+            elseif stat == 'Fruit, Defense' then Stat('Fruit'); wait(0.2); Stat('Defense')
+            elseif stat == 'Melee' then Stat('Melee')
+            elseif stat == 'Defense' then Stat('Defense')
+            elseif stat == 'Sword' then Stat('Sword')
+            elseif stat == 'Fruit' then Stat('Fruit') end
+        end
+    end
+end)
+
+-- ========== XÂY DỰNG GIAO DIỆN NDUC HUB ==========
+local FarmSection = FarmTab:AddSection("Auto Farm Level")
+local MonitorPara = FarmSection:AddParagraph({ Title = "", Content = "" })
+spawn(function()
+    while wait(1) do
+        pcall(function()
+            CheckLv()
+            MonitorPara:SetTitle("Mon: " .. Mon)
+            MonitorPara:SetDesc("Quest: " .. NameQuest)
+        end)
+    end
+end)
+
+FarmSection:AddToggle({ Title = "Auto Farm Level", Default = _G.Settings.Main.AutoFarm, Callback = function(v) _G.Settings.Main.AutoFarm = v end })
+
+-- Lấy danh sách Mob
+local mobList = {}
+for _, v in pairs(workspace.Monster:GetChildren()) do
+    for _, c in pairs(v:GetChildren()) do
+        if c.Name and c.Name ~= 'Value' and not table.find(mobList, c.Name) then table.insert(mobList, c.Name) end
+    end
+end
+for _, v in pairs(game:GetService('ReplicatedStorage'):WaitForChild('MOB'):GetChildren()) do
+    if v.Name and not table.find(mobList, v.Name) then table.insert(mobList, v.Name) end
+end
+
+local MobDropdown = FarmSection:AddDropdown({ Title = "Select Mob", Values = mobList, Default = _G.Settings.Main.SelectMob, Callback = function(v) _G.Settings.Main.SelectMob = v end })
+FarmSection:AddToggle({ Title = "Auto Farm Mob", Default = _G.Settings.Main.AutoFarmMob, Callback = function(v) _G.Settings.Main.AutoFarmMob = v end })
+
+-- Danh sách Boss
+local bossList = {}
+local bossNames = {'Anubis [Lv. 3150]','Ball Man [Lv. 850]','Bear Man [Lv. 2750]','Biscuit Man [Lv. 3250]','Bushido Ape [Lv. 5000]','Chaos Kraken','Dragon [Lv. 5000]','Ghost Ship','Jack o lantern [Lv. 10000]','Lord of Saber [Lv. 8500]','Monster [Lv. 2500]','Ms. Mother [Lv. 7500]','Sea King','Skull King'}
+for _, v in pairs(workspace.Monster:GetChildren()) do
+    for _, c in pairs(v:GetChildren()) do
+        if c.Name and table.find(bossNames, c.Name) and not table.find(bossList, c.Name) then table.insert(bossList, c.Name) end
+    end
+end
+for _, v in pairs(game:GetService('ReplicatedStorage'):WaitForChild('MOB'):GetChildren()) do
+    if v.Name and table.find(bossNames, v.Name) and not table.find(bossList, v.Name) then table.insert(bossList, v.Name) end
+end
+
+FarmSection:AddDropdown({ Title = "Select Boss", Values = bossList, Default = _G.Settings.Main.SelectBoss, Callback = function(v) _G.Settings.Main.SelectBoss = v end })
+FarmSection:AddToggle({ Title = "Auto Farm Boss", Default = _G.Settings.Main.AutoFarmBoss, Callback = function(v) _G.Settings.Main.AutoFarmBoss = v end })
+FarmSection:AddToggle({ Title = "Auto Farm Near", Default = _G.Settings.Main.FarmNear, Callback = function(v) _G.Settings.Main.FarmNear = v end })
+FarmSection:AddToggle({ Title = "Auto Collect Passive Tree", Default = _G.Settings.Main.PassiveTree, Callback = function(v) _G.Settings.Main.PassiveTree = v end })
+FarmSection:AddToggle({ Title = "Auto Farm Minion", Default = _G.Settings.Main.Minion, Callback = function(v) _G.Settings.Main.Minion = v end })
+FarmSection:AddToggle({ Title = "Auto Open Chest", Default = _G.Settings.Main.ChestMinion, Callback = function(v) _G.Settings.Main.ChestMinion = v end })
+
+-- Tab Boss
+local BossSection = BossTab:AddSection("Boss & Sea Event")
+BossSection:AddToggle({ Title = "Auto Dragon", Default = _G.Settings.Boss.AutoDragon, Callback = function(v) _G.Settings.Boss.AutoDragon = v end })
+BossSection:AddToggle({ Title = "Auto Hydra King", Default = _G.Settings.Boss.AutoHydraKing, Callback = function(v) _G.Settings.Boss.AutoHydraKing = v end })
+BossSection:AddToggle({ Title = "Auto Ghost Ship", Default = _G.Settings.Boss.AutoGhost, Callback = function(v) _G.Settings.Boss.AutoGhost = v end })
+BossSection:AddToggle({ Title = "Auto Sea King", Default = _G.Settings.Boss.AutoSeaBeast, Callback = function(v) _G.Settings.Boss.AutoSeaBeast = v end })
+BossSection:AddToggle({ Title = "Auto King Samurai", Default = _G.Settings.Boss.AutoOden, Callback = function(v) _G.Settings.Boss.AutoOden = v end })
+BossSection:AddToggle({ Title = "Auto Ms. Mother", Default = _G.Settings.Boss.AutoBigmom, Callback = function(v) _G.Settings.Boss.AutoBigmom = v end })
+BossSection:AddToggle({ Title = "Auto Jack o lantern", Default = _G.Settings.Boss.AutoJack, Callback = function(v) _G.Settings.Boss.AutoJack = v end })
+BossSection:AddToggle({ Title = "Auto Lord of Saber", Default = _G.Settings.Boss.AutoLordSaber, Callback = function(v) _G.Settings.Boss.AutoLordSaber = v end })
+BossSection:AddToggle({ Title = "Auto Bushido Ape", Default = _G.Settings.Boss.AutoBushido, Callback = function(v) _G.Settings.Boss.AutoBushido = v end })
+BossSection:AddToggle({ Title = "Auto Skull King", Default = _G.Settings.Boss.AutoSkullKing, Callback = function(v) _G.Settings.Boss.AutoSkullKing = v end })
+BossSection:AddToggle({ Title = "Auto Chaos Kraken", Default = _G.Settings.Boss.AutoChaos, Callback = function(v) _G.Settings.Boss.AutoChaos = v end })
+
+-- Tab Raid
+local RaidSection = RaidTab:AddSection("Raid Settings")
+RaidSection:AddToggle({ Title = "Auto Kill Enemies", Default = _G.Settings.Raid.RaidFarm, Callback = function(v) _G.Settings.Raid.RaidFarm = v end })
+RaidSection:AddToggle({ Title = "Safe Mode (TP high when low HP)", Default = _G.Settings.Raid.SafeMode, Callback = function(v) _G.Settings.Raid.SafeMode = v end })
+
+-- Tab Teleport
+local TeleSection = TeleTab:AddSection("Auto Stats")
+local StatPara = TeleSection:AddParagraph({ Title = "", Content = "" })
+spawn(function()
+    while wait(1) do
+        local ps = game.Players.LocalPlayer.PlayerStats
+        StatPara:SetTitle("Points: " .. ps.Points.Value)
+        StatPara:SetDesc("Melee: " .. ps.Melee.Value .. " | Defense: " .. ps.Defense.Value .. " | Sword: " .. ps.sword.Value .. " | Fruit: " .. ps.DF.Value)
+    end
+end)
+TeleSection:AddDropdown({ Title = "Select Stats", Values = {'Melee, Defense','Sword, Defense','Fruit, Defense','Melee','Defense','Sword','Fruit'}, Default = _G.Settings.Teleport.SelectStat, Callback = function(v) _G.Settings.Teleport.SelectStat = v end })
+TeleSection:AddToggle({ Title = "Auto Stats", Default = _G.Settings.Teleport.AutoStat, Callback = function(v) _G.Settings.Teleport.AutoStat = v end })
+
+local IslandSection = TeleTab:AddSection("Teleport Island")
+local islandList = {}
+for _, v in pairs(workspace.SpawnPoints:GetChildren()) do table.insert(islandList, v.Name) end
+IslandSection:AddDropdown({ Title = "Select Island", Values = islandList, Default = _G.Settings.Teleport.SelectIsland, Callback = function(v) _G.Settings.Teleport.SelectIsland = v end })
+IslandSection:AddButton({ Title = "Teleport to Island", Callback = function() TP(workspace.SpawnPoints[_G.Settings.Teleport.SelectIsland].CFrame) end })
+
+-- Tab Shop
+local ShopSection = ShopTab:AddSection("Fruit & Key")
+ShopSection:AddDropdown({ Title = "Select Key", Values = {'Copper Key','Iron Key','Gold Key','Platinum Key'}, Default = _G.Settings.Shop.SelectKey, Callback = function(v) _G.Settings.Shop.SelectKey = v end })
+ShopSection:AddDropdown({ Title = "Open", Values = {'Open1','Open10'}, Default = _G.Settings.Shop.SelectOpen, Callback = function(v) _G.Settings.Shop.SelectOpen = v end })
+ShopSection:AddToggle({ Title = "Auto Buy Key", Default = _G.Settings.Shop.BuyChest, Callback = function(v) _G.Settings.Shop.BuyChest = v end })
+ShopSection:AddToggle({ Title = "Auto Random Fruit", Default = _G.Settings.Shop.RamdomFruit, Callback = function(v) _G.Settings.Shop.RamdomFruit = v end })
+ShopSection:AddToggle({ Title = "Auto Store Fruit", Default = _G.Settings.Shop.AutoStore, Callback = function(v) _G.Settings.Shop.AutoStore = v end })
+ShopSection:AddToggle({ Title = "Auto Collect Fruit on Ground", Default = _G.Settings.Shop.TPFruit, Callback = function(v) _G.Settings.Shop.TPFruit = v end })
+
+-- Tab Config
+local ConfigSection = ConfigTab:AddSection("Combat Settings")
+ConfigSection:AddDropdown({ Title = "Weapon", Values = {'Melee','Sword','Fruit'}, Default = _G.Settings.Config.SelectWeapon, Callback = function(v) _G.Settings.Config.SelectWeapon = v end })
+ConfigSection:AddDropdown({ Title = "Method", Values = {'Behind','Below','Upper'}, Default = _G.Settings.Config.SelectMethod, Callback = function(v) _G.Settings.Config.SelectMethod = v end })
+ConfigSection:AddSlider({ Title = "Distance", Min = 0, Max = 50, Default = _G.Settings.Config.DistanceMon, Callback = function(v) _G.Settings.Config.DistanceMon = v end })
+ConfigSection:AddToggle({ Title = "Bring Mob", Default = _G.Settings.Config.BringMob, Callback = function(v) _G.Settings.Config.BringMob = v end })
+ConfigSection:AddToggle({ Title = "Buso Haki", Default = _G.Settings.Config.BusoHaki, Callback = function(v) _G.Settings.Config.BusoHaki = v end })
+ConfigSection:AddToggle({ Title = "Ken Haki", Default = _G.Settings.Config.KenHaki, Callback = function(v) _G.Settings.Config.KenHaki = v end })
+ConfigSection:AddDropdown({ Title = "Select Skill", Values = {'Z','Z,X','Z,X,C','Z,X,C,V','Z,X,C,V,E'}, Default = _G.Settings.Config.SelectSkill, Callback = function(v) _G.Settings.Config.SelectSkill = v end })
+ConfigSection:AddToggle({ Title = "Auto Skill", Default = _G.Settings.Config.AutoSkill, Callback = function(v) _G.Settings.Config.AutoSkill = v end })
+
+local MiscSection = ConfigTab:AddSection("Misc")
+MiscSection:AddButton({ Title = "Server Hop", Callback = function() 
+    local function hop()
+        local servers = game:GetService("HttpService"):JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+        for _, v in pairs(servers.data) do
+            if v.playing < v.maxPlayers and v.id ~= game.JobId then
+                game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, v.id, game.Players.LocalPlayer)
+                break
+            end
+        end
+    end
+    hop()
+end })
+MiscSection:AddButton({ Title = "Rejoin", Callback = function() game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer) end })
+MiscSection:AddButton({ Title = "FPS Boost", Callback = function()
+    settings().Rendering.QualityLevel = "Level01"
+    game.Lighting.GlobalShadows = false
+    for _, v in pairs(game:GetDescendants()) do
+        if v:IsA("Part") or v:IsA("MeshPart") then v.Material = "Plastic"
+        elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then v.Lifetime = NumberRange.new(0) end
+    end
+end })
+
+-- Anti Idle
+local VirtualUser = game:GetService("VirtualUser")
+game.Players.LocalPlayer.Idled:Connect(function()
+    VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    task.wait(0.25)
+    VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+end)
+
+-- Thông báo khởi tạo
+print("Nduc Hub Loaded Successfully!")
