@@ -1,0 +1,2855 @@
+local Library = {}
+
+-- MÀU CHỦ ĐẠO (XANH DƯƠNG)
+local ACCENT_COLOR = Color3.fromRGB(0, 120, 215)
+local ACCENT_DARK = Color3.fromRGB(0, 80, 160)
+local ACCENT_LIGHT = Color3.fromRGB(0, 150, 255)
+
+function Library:TweenInstance(Instance, Time, OldValue, NewValue)
+	local rz_Tween = game:GetService("TweenService"):Create(Instance, TweenInfo.new(Time, Enum.EasingStyle.Quad), { [OldValue] = NewValue })
+	rz_Tween:Play()
+	return rz_Tween
+end
+
+function Library:UpdateContent(Content, Title, Object)
+	if Content.Text ~= "" then
+		Title.Position = UDim2.new(0, 10, 0, 7)
+		Title.Size = UDim2.new(1, -60, 0, 16)
+		local MaxY = math.max(Content.TextBounds.Y + 15, 45)
+		Object.Size = UDim2.new(1, 0, 0, MaxY)
+	end
+end
+
+function Library:UpdateScrolling(Scroll, List)
+	List:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		Scroll.CanvasSize = UDim2.new(0, 0, 0, List.AbsoluteContentSize.Y + 15)
+	end)
+end
+
+function Library:MouseEvent(Skibidi, ...)
+	local Args = { ... }
+	Skibidi.MouseEnter:Connect(Args[1])
+	Skibidi.MouseLeave:Connect(Args[2])
+end
+
+function Library:MakeConfig(Config, NewConfig)
+	for i, v in next, Config do
+		if not NewConfig[i] then
+			NewConfig[i] = v
+		end
+	end
+	return NewConfig
+end
+
+function Library:MakeDraggable(topbarobject, object)
+	local Dragging = nil
+	local DragInput = nil
+	local DragStart = nil
+	local StartPosition = nil
+	local function UpdatePos(input)
+		local Delta = input.Position - DragStart
+		local pos = UDim2.new(StartPosition.X.Scale, StartPosition.X.Offset + Delta.X, StartPosition.Y.Scale,
+			StartPosition.Y.Offset + Delta.Y)
+		local Tween = game:GetService("TweenService"):Create(object, TweenInfo.new(0.2), { Position = pos })
+		Tween:Play()
+	end
+	topbarobject.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			Dragging = true
+			DragStart = input.Position
+			StartPosition = object.Position
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					Dragging = false
+				end
+			end)
+		end
+	end)
+	topbarobject.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+			DragInput = input
+		end
+	end)
+	game:GetService("UserInputService").InputChanged:Connect(function(input)
+		if input == DragInput and Dragging then
+			UpdatePos(input)
+		end
+	end)
+end
+
+function Library:NewWindow(ConfigWindow)
+	local ConfigWindow = self:MakeConfig({
+		Title = "Nduc Hub",
+		Description = "Blox Fruits | Best Script",
+	}, ConfigWindow or {})
+
+	local TeddyUI_Premium = Instance.new("ScreenGui")
+	local DropShadowHolder = Instance.new("Frame")
+	local DropShadow = Instance.new("ImageLabel")
+	local Main = Instance.new("Frame")
+	local UICorner = Instance.new("UICorner")
+	local Top = Instance.new("Frame")
+	local Line = Instance.new("Frame")
+	local Left = Instance.new("Folder")
+	local NameHub = Instance.new("TextLabel")
+	local LogoHub = Instance.new("ImageLabel")
+	local Desc = Instance.new("TextLabel")
+	local Right = Instance.new("Folder")
+	local Frame = Instance.new("Frame")
+	local UIListLayout = Instance.new("UIListLayout")
+	local UIPadding = Instance.new("UIPadding")
+	local Minize = Instance.new("TextButton")
+	local Icon = Instance.new("ImageLabel")
+	local Large = Instance.new("TextButton")
+	local Icon_2 = Instance.new("ImageLabel")
+	local Close = Instance.new("TextButton")
+	local Icon_3 = Instance.new("ImageLabel")
+	local UIStroke = Instance.new("UIStroke")
+	local TabFrame = Instance.new("Frame")
+	local Line_2 = Instance.new("Frame")
+	local ScrollingTab = Instance.new("ScrollingFrame")
+	local UIPadding_2 = Instance.new("UIPadding")
+	local UIListLayout_2 = Instance.new("UIListLayout")
+	local LayoutFrame = Instance.new("Frame")
+	local RealLayout = Instance.new("Frame")
+	local LayoutList = Instance.new("Folder")
+	local UIPageLayout = Instance.new("UIPageLayout")
+	local LayoutName = Instance.new("Frame")
+	local TextLabel = Instance.new("TextLabel")
+	local DropdownZone = Instance.new("Frame")
+
+	TeddyUI_Premium.Name = "NducHub"
+	TeddyUI_Premium.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+	TeddyUI_Premium.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	TeddyUI_Premium.AutoLocalize = false
+
+	-- ========================================
+	-- NÚT TRÒN FLOATING ĐỂ BẬT/TẮT MENU
+	-- ========================================
+	local ToggleButton = Instance.new("ImageButton")
+	ToggleButton.Name = "ToggleButton"
+	ToggleButton.Parent = TeddyUI_Premium
+	ToggleButton.Size = UDim2.new(0, 50, 0, 50)
+	ToggleButton.Position = UDim2.new(0, 20, 0.5, -25)
+	ToggleButton.BackgroundColor3 = ACCENT_COLOR
+	ToggleButton.Image = "rbxassetid://88161224206829"
+	ToggleButton.ScaleType = Enum.ScaleType.Fit
+	ToggleButton.BorderSizePixel = 0
+	ToggleButton.BackgroundTransparency = 0
+	ToggleButton.Visible = true
+	
+	local ToggleCorner = Instance.new("UICorner")
+	ToggleCorner.Parent = ToggleButton
+	ToggleCorner.CornerRadius = UDim.new(1, 0)
+	
+	-- Kéo thả cho nút toggle
+	self:MakeDraggable(ToggleButton, ToggleButton)
+	
+	-- ========================================
+	-- MENU CHÍNH (ẨN BAN ĐẦU)
+	-- ========================================
+	DropShadowHolder.Name = "DropShadowHolder"
+	DropShadowHolder.Parent = TeddyUI_Premium
+	DropShadowHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+	DropShadowHolder.BackgroundTransparency = 1.000
+	DropShadowHolder.BorderSizePixel = 0
+	DropShadowHolder.Position = UDim2.new(0.5, 0, 0.5, 0)
+	DropShadowHolder.Size = UDim2.new(0, 900, 0, 600)
+	DropShadowHolder.ZIndex = 0
+	DropShadowHolder.Visible = false  -- Ẩn menu ban đầu
+
+	DropShadow.Name = "DropShadow"
+	DropShadow.Parent = DropShadowHolder
+	DropShadow.AnchorPoint = Vector2.new(0.5, 0.5)
+	DropShadow.BackgroundTransparency = 1.000
+	DropShadow.BorderSizePixel = 0
+	DropShadow.Position = UDim2.new(0.5, 0, 0.5, 0)
+	DropShadow.Size = UDim2.new(1, 47, 1, 47)
+	DropShadow.ZIndex = 0
+	DropShadow.Image = "rbxassetid://6015897843"
+	DropShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+	DropShadow.ImageTransparency = 0.500
+	DropShadow.ScaleType = Enum.ScaleType.Slice
+	DropShadow.SliceCenter = Rect.new(49, 49, 450, 450)
+
+	Main.Name = "Main"
+	Main.Parent = DropShadowHolder
+	Main.AnchorPoint = Vector2.new(0.5, 0.5)
+	Main.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	Main.BackgroundTransparency = 0.150
+	Main.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Main.BorderSizePixel = 0
+	Main.Position = UDim2.new(0.5, 0, 0.5, 0)
+	Main.Size = UDim2.new(1, 0, 1, 0)
+
+	UICorner.Parent = Main
+
+	Top.Name = "Top"
+	Top.Parent = Main
+	Top.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Top.BackgroundTransparency = 1.000
+	Top.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Top.BorderSizePixel = 0
+	Top.Size = UDim2.new(1, 0, 0, 50)
+
+	-- Đường line màu xanh (thay vì đỏ)
+	Line.Name = "Line"
+	Line.Parent = Top
+	Line.BackgroundColor3 = ACCENT_COLOR
+	Line.BackgroundTransparency = 0.500
+	Line.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Line.BorderSizePixel = 0
+	Line.Position = UDim2.new(0, 0, 1, -1)
+	Line.Size = UDim2.new(1, 0, 0, 1)
+
+	Left.Name = "Left"
+	Left.Parent = Top
+
+	NameHub.Name = "NameHub"
+	NameHub.Parent = Left
+	NameHub.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	NameHub.BackgroundTransparency = 1.000
+	NameHub.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	NameHub.BorderSizePixel = 0
+	NameHub.Position = UDim2.new(0, 60, 0, 10)
+	NameHub.Size = UDim2.new(0, 470, 0, 20)
+	NameHub.Font = Enum.Font.GothamBold
+	NameHub.Text = ConfigWindow.Title
+	NameHub.TextColor3 = Color3.fromRGB(255, 255, 255)
+	NameHub.TextSize = 14.000
+	NameHub.TextXAlignment = Enum.TextXAlignment.Left
+	NameHub.AutoLocalize = false
+
+	LogoHub.Name = "LogoHub"
+	LogoHub.Parent = Left
+	LogoHub.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	LogoHub.BackgroundTransparency = 1.000
+	LogoHub.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	LogoHub.BorderSizePixel = 0
+	LogoHub.Position = UDim2.new(0, 10, 0, 5)
+	LogoHub.Size = UDim2.new(0, 40, 0, 35)
+	LogoHub.Image = "rbxassetid://81844334586058"
+
+	Desc.Name = "Desc"
+	Desc.Parent = Left
+	Desc.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Desc.BackgroundTransparency = 1.000
+	Desc.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Desc.BorderSizePixel = 0
+	Desc.Position = UDim2.new(0, 60, 0, 27)
+	Desc.Size = UDim2.new(0, 470, 1, -30)
+	Desc.Font = Enum.Font.GothamBold
+	Desc.Text = ConfigWindow.Description
+	Desc.TextColor3 = Color3.fromRGB(100, 100, 100)
+	Desc.TextSize = 12.000
+	Desc.TextXAlignment = Enum.TextXAlignment.Left
+	Desc.TextYAlignment = Enum.TextYAlignment.Top
+	Desc.AutoLocalize = false
+
+	Right.Name = "Right"
+	Right.Parent = Top
+
+	Frame.Parent = Right
+	Frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Frame.BackgroundTransparency = 1.000
+	Frame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Frame.BorderSizePixel = 0
+	Frame.Position = UDim2.new(1, -110, 0, 0)
+	Frame.Size = UDim2.new(0, 110, 1, 0)
+
+	UIListLayout.Parent = Frame
+	UIListLayout.FillDirection = Enum.FillDirection.Horizontal
+	UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	UIListLayout.Padding = UDim.new(0, 6)
+
+	UIPadding.Parent = Frame
+	UIPadding.PaddingTop = UDim.new(0, 10)
+
+	Minize.Name = "Minize"
+	Minize.Parent = Frame
+	Minize.Active = false
+	Minize.AnchorPoint = Vector2.new(0, 0.5)
+	Minize.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Minize.BackgroundTransparency = 1.000
+	Minize.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Minize.BorderSizePixel = 0
+	Minize.Selectable = false
+	Minize.Size = UDim2.new(0, 30, 0, 30)
+	Minize.Text = ""
+	Minize.AutoLocalize = false
+
+	Icon.Name = "Icon"
+	Icon.Parent = Minize
+	Icon.AnchorPoint = Vector2.new(0.5, 0.5)
+	Icon.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Icon.BackgroundTransparency = 1.000
+	Icon.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Icon.BorderSizePixel = 0
+	Icon.Position = UDim2.new(0.5, 0, 0.5, 0)
+	Icon.Size = UDim2.new(0, 20, 0, 20)
+	Icon.Image = "rbxassetid://136452605242985"
+	Icon.ImageRectOffset = Vector2.new(288, 672)
+	Icon.ImageRectSize = Vector2.new(96, 96)
+
+	Large.Name = "Large"
+	Large.Parent = Frame
+	Large.Active = false
+	Large.AnchorPoint = Vector2.new(0, 0.5)
+	Large.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Large.BackgroundTransparency = 1.000
+	Large.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Large.BorderSizePixel = 0
+	Large.Selectable = false
+	Large.Size = UDim2.new(0, 30, 0, 30)
+	Large.Text = ""
+	Large.AutoLocalize = false
+
+	Icon_2.Name = "Icon"
+	Icon_2.Parent = Large
+	Icon_2.AnchorPoint = Vector2.new(0.5, 0.5)
+	Icon_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Icon_2.BackgroundTransparency = 1.000
+	Icon_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Icon_2.BorderSizePixel = 0
+	Icon_2.Position = UDim2.new(0.5, 0, 0.5, 0)
+	Icon_2.Size = UDim2.new(0, 18, 0, 18)
+	Icon_2.Image = "rbxassetid://136452605242985"
+	Icon_2.ImageRectOffset = Vector2.new(580, 194)
+	Icon_2.ImageRectSize = Vector2.new(96, 96)
+
+	Close.Name = "Close"
+	Close.Parent = Frame
+	Close.Active = false
+	Close.AnchorPoint = Vector2.new(0, 0.5)
+	Close.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Close.BackgroundTransparency = 1.000
+	Close.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Close.BorderSizePixel = 0
+	Close.Selectable = false
+	Close.Size = UDim2.new(0, 30, 0, 30)
+	Close.Text = ""
+	Close.AutoLocalize = false
+
+	Icon_3.Name = "Icon"
+	Icon_3.Parent = Close
+	Icon_3.AnchorPoint = Vector2.new(0.5, 0.5)
+	Icon_3.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Icon_3.BackgroundTransparency = 1.000
+	Icon_3.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Icon_3.BorderSizePixel = 0
+	Icon_3.Position = UDim2.new(0.5, 0, 0.5, 0)
+	Icon_3.Size = UDim2.new(0, 20, 0, 20)
+	Icon_3.Image = "rbxassetid://105957381820378"
+	Icon_3.ImageRectOffset = Vector2.new(480, 0)
+	Icon_3.ImageRectSize = Vector2.new(96, 96)
+
+	-- UIStroke màu xanh
+	UIStroke.Color = ACCENT_COLOR
+	UIStroke.Transparency = 0.5
+	UIStroke.Parent = Main
+
+	TabFrame.Name = "TabFrame"
+	TabFrame.Parent = Main
+	TabFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	TabFrame.BackgroundTransparency = 1.000
+	TabFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	TabFrame.BorderSizePixel = 0
+	TabFrame.Position = UDim2.new(0, 0, 0, 50)
+	TabFrame.Size = UDim2.new(0, 144, 1, -50)
+
+	-- Line_2 màu xanh
+	Line_2.Name = "Line"
+	Line_2.Parent = TabFrame
+	Line_2.BackgroundColor3 = ACCENT_COLOR
+	Line_2.BackgroundTransparency = 0.500
+	Line_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Line_2.BorderSizePixel = 0
+	Line_2.Position = UDim2.new(1, -1, 0, 0)
+	Line_2.Size = UDim2.new(0, 1, 1, 0)
+
+	ScrollingTab.Name = "ScrollingTab"
+	ScrollingTab.Parent = TabFrame
+	ScrollingTab.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	ScrollingTab.BackgroundTransparency = 1.000
+	ScrollingTab.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	ScrollingTab.BorderSizePixel = 0
+	ScrollingTab.Position = UDim2.new(0, 0, 0, 0)
+	ScrollingTab.Selectable = false
+	ScrollingTab.Size = UDim2.new(1, 0, 1, 0)
+	ScrollingTab.ScrollBarThickness = 0
+
+	self:UpdateScrolling(ScrollingTab, UIListLayout_2)
+
+	UIPadding_2.Parent = ScrollingTab
+	UIPadding_2.PaddingBottom = UDim.new(0, 3)
+	UIPadding_2.PaddingLeft = UDim.new(0, 7)
+	UIPadding_2.PaddingRight = UDim.new(0, 7)
+	UIPadding_2.PaddingTop = UDim.new(0, 10)
+
+	UIListLayout_2.Parent = ScrollingTab
+	UIListLayout_2.SortOrder = Enum.SortOrder.LayoutOrder
+
+	LayoutFrame.Name = "LayoutFrame"
+	LayoutFrame.Parent = Main
+	LayoutFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	LayoutFrame.BackgroundTransparency = 1.000
+	LayoutFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	LayoutFrame.BorderSizePixel = 0
+	LayoutFrame.Position = UDim2.new(0, 144, 0, 50)
+	LayoutFrame.Size = UDim2.new(1, -144, 1, -50)
+	LayoutFrame.ClipsDescendants = true
+
+	RealLayout.Name = "RealLayout"
+	RealLayout.Parent = LayoutFrame
+	RealLayout.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	RealLayout.BackgroundTransparency = 1.000
+	RealLayout.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	RealLayout.BorderSizePixel = 0
+	RealLayout.Position = UDim2.new(0, 0, 0, 40)
+	RealLayout.Size = UDim2.new(1, 0, 1, -40)
+
+	LayoutList.Name = "Layout List"
+	LayoutList.Parent = RealLayout
+
+	UIPageLayout.Parent = LayoutList
+	UIPageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	UIPageLayout.EasingStyle = Enum.EasingStyle.Quad
+	UIPageLayout.TweenTime = 0.300
+
+	LayoutName.Name = "LayoutName"
+	LayoutName.Parent = LayoutFrame
+	LayoutName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	LayoutName.BackgroundTransparency = 1.000
+	LayoutName.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	LayoutName.BorderSizePixel = 0
+	LayoutName.Size = UDim2.new(1, 0, 0, 40)
+
+	TextLabel.Parent = LayoutName
+	TextLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	TextLabel.BackgroundTransparency = 1.000
+	TextLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	TextLabel.BorderSizePixel = 0
+	TextLabel.Position = UDim2.new(0, 10, 0, 0)
+	TextLabel.Size = UDim2.new(1, -10, 1, 0)
+	TextLabel.Font = Enum.Font.GothamBold
+	TextLabel.Text = ""
+	TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	TextLabel.TextSize = 13.000
+	TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+	TextLabel.AutoLocalize = false
+
+	DropdownZone.Name = "DropdownZone"
+	DropdownZone.Parent = Main
+	DropdownZone.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	DropdownZone.BackgroundTransparency = 1
+	DropdownZone.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	DropdownZone.BorderSizePixel = 0
+	DropdownZone.Size = UDim2.new(1, 0, 1, 0)
+	DropdownZone.Visible = false
+
+	self:MakeDraggable(Top, DropShadowHolder)
+
+	-- Nút thu nhỏ (Minimize) - Ẩn menu
+	Minize.MouseButton1Click:Connect(function()
+		DropShadowHolder.Visible = false
+	end)
+
+	-- Nút đóng (Close) - Ẩn menu
+	Close.MouseButton1Click:Connect(function()
+		DropShadowHolder.Visible = false
+	end)
+
+	-- Nút phóng to (Large) - Hiện lại menu nếu đang ẩn
+	Large.MouseButton1Click:Connect(function()
+		DropShadowHolder.Visible = true
+	end)
+
+	-- NÚT TRÒN FLOATING: BẬT/TẮT MENU
+	ToggleButton.MouseButton1Click:Connect(function()
+		DropShadowHolder.Visible = not DropShadowHolder.Visible
+	end)
+
+	-- Resize Handle
+	local ResizeHandle = Instance.new("TextButton")
+	ResizeHandle.Name = "ResizeHandle"
+	ResizeHandle.Parent = Main
+	ResizeHandle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	ResizeHandle.BackgroundTransparency = 1.000
+	ResizeHandle.Position = UDim2.new(1, -20, 1, -20)
+	ResizeHandle.Size = UDim2.new(0, 20, 0, 20)
+	ResizeHandle.Text = ""
+	ResizeHandle.ZIndex = 100
+	ResizeHandle.AutoLocalize = false
+
+	local Resizing = false
+	local ResizeDragStart = nil
+	local ResizeStartSize = nil
+	local ResizeStartPos = nil
+
+	ResizeHandle.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			Resizing = true
+			ResizeDragStart = input.Position
+			ResizeStartSize = DropShadowHolder.AbsoluteSize
+			ResizeStartPos = DropShadowHolder.Position
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					Resizing = false
+				end
+			end)
+		end
+	end)
+
+	game:GetService("UserInputService").InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+			if Resizing then
+				local delta = input.Position - ResizeDragStart
+				local newWidth = math.clamp(ResizeStartSize.X + delta.X, 800, 1200)
+				local newHeight = math.clamp(ResizeStartSize.Y + delta.Y, 500, 800)
+				local deltaX = newWidth - ResizeStartSize.X
+				local deltaY = newHeight - ResizeStartSize.Y
+				DropShadowHolder.Size = UDim2.new(0, newWidth, 0, newHeight)
+				DropShadowHolder.Position = UDim2.new(
+					ResizeStartPos.X.Scale, ResizeStartPos.X.Offset + (deltaX / 2),
+					ResizeStartPos.Y.Scale, ResizeStartPos.Y.Offset + (deltaY / 2)
+				)
+			end
+		end
+	end)
+
+	-- ========================================
+	-- CÁC BIẾN VÀ HÀM TỪ BEAR HUB
+	-- ========================================
+	local Services = setmetatable({}, {
+		__index = function(self, serviceName)
+			local service = game:GetService(serviceName)
+			rawset(self, serviceName, service)
+			return service
+		end
+	})
+
+	local HttpService = Services.HttpService
+	local FolderName = "NducHub"
+	local FileName = "Settings.json"
+	local FullPath = FolderName .. "/" .. FileName
+
+	if makefolder and not isfolder(FolderName) then 
+		makefolder(FolderName) 
+	end
+
+	_G.SaveData = _G.SaveData or {}
+
+	function SaveSettings()
+		if not writefile then return false end
+		local success = pcall(function()
+			local json = HttpService:JSONEncode(_G.SaveData)
+			writefile(FullPath, json)
+		end)
+		return success
+	end
+
+	function LoadSettings()
+		if not (isfile and isfile(FullPath)) then return false end
+		local success, result = pcall(function()
+			local content = readfile(FullPath)
+			return HttpService:JSONDecode(content)
+		end)
+		if success and result then 
+			_G.SaveData = result
+			return true
+		end
+		return false
+	end
+
+	function GetSetting(name, default)
+		return _G.SaveData[name] ~= nil and _G.SaveData[name] or default
+	end
+
+	LoadSettings()
+
+	-- ========================================
+	-- AUTO KEN (Observation Haki)
+	-- ========================================
+	local Players = Services.Players
+	local CollectionService = Services.CollectionService
+	local ReplicatedStorage = Services.ReplicatedStorage
+
+	local player = Players.LocalPlayer
+	local commE = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommE")
+
+	_G.AutoKen = true
+
+	local function HasKen()
+		local char = player.Character
+		return char and CollectionService:HasTag(char, "Ken")
+	end
+
+	task.spawn(function()
+		while _G.AutoKen do
+			task.wait(0.2)
+			if not HasKen() then
+				pcall(function()
+					commE:FireServer("Ken", true)
+				end)
+			end
+		end
+	end)
+
+	-- ========================================
+	-- AUTO TEAM & LIGHTING
+	-- ========================================
+	local desiredTeam = "Marines"
+
+	if not player.Team or player.Team.Name ~= desiredTeam then
+		pcall(function()
+			ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", desiredTeam)
+		end)
+	end
+
+	local Lighting = Services.Lighting
+
+	Lighting.Ambient = Color3.new(0.695, 0.695, 0.695)
+	Lighting.ColorShift_Bottom = Color3.new(0.695, 0.695, 0.695)
+	Lighting.ColorShift_Top = Color3.new(0.695, 0.695, 0.695)
+	Lighting.Brightness = 2
+	Lighting.FogEnd = 1e10
+
+	-- ========================================
+	-- GLOBAL VARIABLES
+	-- ========================================
+	do
+		ply = Services.Players
+		plr = ply.LocalPlayer
+		Root = plr.Character and plr.Character.HumanoidRootPart
+		replicated = Services.ReplicatedStorage
+		Lv = plr.Data.Level.Value
+		TeleportService = Services.TeleportService
+		TW = Services.TweenService
+		Lighting = Services.Lighting
+		Enemies = workspace.Enemies
+		vim1 = Services.VirtualInputManager
+		vim2 = Services.VirtualUser
+		TeamSelf = plr.Team
+		RunSer = Services.RunService
+		Stats = Services.Stats
+		
+		Boss = {}
+		BringConnections = {}
+		MaterialList = {}
+		NPCList = {}
+		
+		shouldTween = false
+		SoulGuitar = false
+		KenTest = true
+		debug = false
+		Brazier1 = false
+		Brazier2 = false
+		Brazier3 = false
+		Sec = 0.1
+		ClickState = 0
+		Num_self = 25
+	end
+
+	-- Wait for game to load
+	repeat
+		local loading = plr.PlayerGui:FindFirstChild("Main")
+		loading = loading and loading:FindFirstChild("Loading")
+		task.wait()
+	until game:IsLoaded() and not (loading and loading.Visible)
+
+	-- World Detection
+	local placeId = game.PlaceId
+	local World1, World2, World3 = false, false, false
+	if placeId == 2753915549 or placeId == 85211729168715 then
+		World1 = true
+	elseif placeId == 4442272183 or placeId == 79091703265657 then
+		World2 = true
+	elseif placeId == 7449423635 or placeId == 100117331123089 then
+		World3 = true
+	else
+		plr:Kick("❌ Error Blox Fruits - World not recognized")
+	end
+
+	Sea = World1 or World2 or World3
+
+	Marines = function()
+		replicated.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
+	end
+
+	Pirates = function()
+		replicated.Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
+	end
+
+	-- Boss Lists
+	if World1 then
+		Boss = {
+			"The Gorilla King", "Bobby", "The Saw", "Yeti", "Mob Leader",
+			"Vice Admiral", "Saber Expert", "Warden", "Chief Warden", "Swan",
+			"Magma Admiral", "Fishman Lord", "Wysper", "Thunder God", "Cyborg",
+			"Ice Admiral", "Greybeard",
+		}
+		MaterialList = {
+			"Leather + Scrap Metal", "Angel Wings", "Magma Ore", "Fish Tail",
+		}
+	elseif World2 then
+		Boss = {
+			"Diamond", "Jeremy", "Fajita", "Don Swan", "Smoke Admiral",
+			"Awakened Ice Admiral", "Tide Keeper", "Darkbeard", "Cursed Captain", "Order",
+		}
+		MaterialList = {
+			"Leather + Scrap Metal", "Radioactive Material", "Ectoplasm", "Mystic Droplet", "Magma Ore", "Vampire Fang",
+		}
+	elseif World3 then
+		Boss = {
+			"Stone", "Hydra Leader", "Kilo Admiral", "Captain Elephant",
+			"Beautiful Pirate", "Cake Queen", "Longma", "Soul Reaper",
+		}
+		MaterialList = {
+			"Scrap Metal", "Demonic Wisp", "Conjured Cocoa", "Dragon Scale", "Gunpowder", "Fish Tail", "Mini Tusk",
+		}
+	end
+
+	-- ========================================
+	-- CÁC HÀM HỖ TRỢ
+	-- ========================================
+	EquipWeapon = function(I)
+		if not I then return end
+		if plr.Backpack:FindFirstChild(I) then
+			plr.Character.Humanoid:EquipTool(plr.Backpack:FindFirstChild(I))
+		end
+	end
+
+	weaponSc = function(I)
+		for e, K in pairs(plr.Backpack:GetChildren()) do
+			if K:IsA("Tool") then
+				if K.ToolTip == I then
+					EquipWeapon(K.Name)
+				end
+			end
+		end
+	end
+
+	local G = {}
+	G.__index = G
+	G.Alive = function(I)
+		if not I then return end
+		local e = I:FindFirstChild("Humanoid")
+		return e and e.Health > 0
+	end
+
+	G.Dist = function(I, e)
+		local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+		if not root or not I then return false end
+		local hrp = I:FindFirstChild("HumanoidRootPart")
+		if not hrp then return false end
+		return (root.Position - hrp.Position).Magnitude <= e
+	end
+
+	_G.MobHeight = _G.MobHeight or 20
+	_G.BringRange = _G.BringRange or 235
+	_G.MaxBringMobs = _G.MaxBringMobs or 3
+	_B = false
+	PosMon = nil
+
+	BringEnemy = function()
+		if not _B then return end
+		local char = plr.Character
+		local hrp = char and char:FindFirstChild("HumanoidRootPart")
+		if not hrp then return end
+		pcall(function()
+			sethiddenproperty(plr, "SimulationRadius", math.huge)
+		end)
+	end
+
+	Useskills = function(I, e)
+		if I == "Melee" then
+			weaponSc("Melee")
+			if e == "Z" then
+				vim1:SendKeyEvent(true, "Z", false, game)
+				vim1:SendKeyEvent(false, "Z", false, game)
+			elseif e == "X" then
+				vim1:SendKeyEvent(true, "X", false, game)
+				vim1:SendKeyEvent(false, "X", false, game)
+			elseif e == "C" then
+				vim1:SendKeyEvent(true, "C", false, game)
+				vim1:SendKeyEvent(false, "C", false, game)
+			end
+		elseif I == "Sword" then
+			weaponSc("Sword")
+			if e == "Z" then
+				vim1:SendKeyEvent(true, "Z", false, game)
+				vim1:SendKeyEvent(false, "Z", false, game)
+			elseif e == "X" then
+				vim1:SendKeyEvent(true, "X", false, game)
+				vim1:SendKeyEvent(false, "X", false, game)
+			end
+		elseif I == "Blox Fruit" then
+			weaponSc("Blox Fruit")
+			if e == "Z" then
+				vim1:SendKeyEvent(true, "Z", false, game)
+				vim1:SendKeyEvent(false, "Z", false, game)
+			elseif e == "X" then
+				vim1:SendKeyEvent(true, "X", false, game)
+				vim1:SendKeyEvent(false, "X", false, game)
+			elseif e == "C" then
+				vim1:SendKeyEvent(true, "C", false, game)
+				vim1:SendKeyEvent(false, "C", false, game)
+			elseif e == "V" then
+				vim1:SendKeyEvent(true, "V", false, game)
+				vim1:SendKeyEvent(false, "V", false, game)
+			end
+		elseif I == "Gun" then
+			weaponSc("Gun")
+			if e == "Z" then
+				vim1:SendKeyEvent(true, "Z", false, game)
+				vim1:SendKeyEvent(false, "Z", false, game)
+			elseif e == "X" then
+				vim1:SendKeyEvent(true, "X", false, game)
+				vim1:SendKeyEvent(false, "X", false, game)
+			end
+		end
+	end
+
+	GetConnectionEnemies = function(I)
+		for e, K in pairs(replicated:GetChildren()) do
+			if K:IsA("Model") and ((typeof(I) == "table" and table.find(I, K.Name) or K.Name == I) and (K:FindFirstChild("Humanoid") and K.Humanoid.Health > 0)) then
+				return K
+			end
+		end
+		for e, K in next, game.Workspace.Enemies:GetChildren() do
+			if K:IsA("Model") and ((typeof(I) == "table" and table.find(I, K.Name) or K.Name == I) and (K:FindFirstChild("Humanoid") and K.Humanoid.Health > 0)) then
+				return K
+			end
+		end
+	end
+
+	LowCpu = function()
+		local I = true
+		local e = game
+		local K = e.Workspace
+		local n = e.Lighting
+		local d = K.Terrain
+		d.WaterWaveSize = 0
+		d.WaterWaveSpeed = 0
+		d.WaterReflectance = 0
+		d.WaterTransparency = 0
+		n.GlobalShadows = false
+		n.FogEnd = 9000000000.0
+		n.Brightness = 1
+		settings().Rendering.QualityLevel = "Level01"
+		for e, K in pairs(e:GetDescendants()) do
+			if K:IsA("Part") or K:IsA("Union") or K:IsA("CornerWedgePart") or K:IsA("TrussPart") then
+				K.Material = "Plastic"
+				K.Reflectance = 0
+			elseif K:IsA("Decal") or K:IsA("Texture") and I then
+				K.Transparency = 1
+			elseif K:IsA("ParticleEmitter") or K:IsA("Trail") then
+				K.Lifetime = NumberRange.new(0)
+			elseif K:IsA("Explosion") then
+				K.BlastPressure = 1
+				K.BlastRadius = 1
+			elseif K:IsA("Fire") or K:IsA("SpotLight") or K:IsA("Smoke") or K:IsA("Sparkles") then
+				K.Enabled = false
+			elseif K:IsA("MeshPart") then
+				K.Material = "Plastic"
+				K.Reflectance = 0
+				K.TextureID = 10385902758728957
+			end
+		end
+		for I, e in pairs(n:GetChildren()) do
+			if e:IsA("BlurEffect") or e:IsA("SunRaysEffect") or e:IsA("ColorCorrectionEffect") or e:IsA("BloomEffect") or e:IsA("DepthOfFieldEffect") then
+				e.Enabled = false
+			end
+		end
+	end
+
+	GetBP = function(I)
+		return plr.Backpack:FindFirstChild(I) or plr.Character:FindFirstChild(I)
+	end
+
+	GetM = function(I)
+		for e, K in pairs(replicated.Remotes.CommF_:InvokeServer("getInventory")) do
+			if type(K) == "table" then
+				if K.Type == "Material" then
+					if K.Name == I then
+						return K.Count
+					end
+				end
+			end
+		end
+		return 0
+	end
+
+	GetWP = function(I)
+		for e, K in pairs(replicated.Remotes.CommF_:InvokeServer("getInventory")) do
+			if type(K) == "table" then
+				if K.Type == "Sword" then
+					if K.Name == I or plr.Character:FindFirstChild(I) or plr.Backpack:FindFirstChild(I) then
+						return true
+					end
+				end
+			end
+		end
+		return false
+	end
+
+	getInfinity_Ability = function(I, e)
+		if not Root then return end
+		if I == "Soru" and e then
+			for I, K in next, getgc() do
+				if plr.Character.Soru then
+					if typeof(K) == "function" and (getfenv(K)).script == plr.Character.Soru then
+						for I, K in next, getupvalues(K) do
+							if typeof(K) == "table" then
+								repeat
+									wait(Sec)
+									K.LastUse = 0
+								until not e or plr.Character.Humanoid.Health <= 0
+							end
+						end
+					end
+				end
+			end
+		elseif I == "Energy" and e then
+			plr.Character.Energy.Changed:connect(function()
+				if e then
+					plr.Character.Energy.Value = 100
+				end
+			end)
+		elseif I == "Observation" and e then
+			local I = plr.VisionRadius
+			I.Value = math.huge
+		end
+	end
+
+	Hop = function()
+		pcall(function()
+			for I = math.random(1, math.random(40, 75)), 100, 1 do
+				local e = replicated.__ServerBrowser:InvokeServer(I)
+				for I, e in next, e do
+					if tonumber(e.Count) < 12 then
+						TeleportService:TeleportToPlaceInstance(game.PlaceId, I)
+					end
+				end
+			end
+		end)
+	end
+
+	_tp = function(I)
+		local e = plr.Character
+		if not e or not e:FindFirstChild("HumanoidRootPart") then return end
+		local HRP = e.HumanoidRootPart
+		shouldTween = true
+		local dist = (I.Position - HRP.Position).Magnitude
+		local speed = dist <= 90 and 900 or 300
+		local info = TweenInfo.new(dist / speed, Enum.EasingStyle.Linear)
+		local tween = TW:Create(HRP, info, { CFrame = I })
+		tween:Play()
+		task.spawn(function()
+			while tween.PlaybackState == Enum.PlaybackState.Playing do
+				if not shouldTween then
+					tween:Cancel()
+					break
+				end
+				task.wait(.1)
+			end
+		end)
+	end
+
+	notween = function(I)
+		if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+			plr.Character.HumanoidRootPart.CFrame = I
+		end
+	end
+
+	CheckBoat = function()
+		for I, e in pairs(workspace.Boats:GetChildren()) do
+			if tostring(e.Owner.Value) == tostring(plr.Name) then
+				return e
+			end
+		end
+		return false
+	end
+
+	CheckEnemiesBoat = function()
+		for I, e in pairs(workspace.Enemies:GetChildren()) do
+			if e.Name == "FishBoat" and (e:FindFirstChild("Health")).Value > 0 then
+				return true
+			end
+		end
+		return false
+	end
+
+	CheckPirateGrandBrigade = function()
+		for I, e in pairs(workspace.Enemies:GetChildren()) do
+			if (e.Name == "PirateGrandBrigade" or e.Name == "PirateBrigade") and (e:FindFirstChild("Health")).Value > 0 then
+				return true
+			end
+		end
+		return false
+	end
+
+	CheckTerrorShark = function()
+		for I, e in pairs(workspace.Enemies:GetChildren()) do
+			if e.Name == "Terrorshark" and G.Alive(e) then
+				return true
+			end
+		end
+		return false
+	end
+
+	-- ========================================
+	-- FAST ATTACK SYSTEM
+	-- ========================================
+	_G.Settings = _G.Settings or {}
+	_G.Settings.AutoClick = true
+	_G.Settings.FastAttack = true
+	_G.Settings.FastAttackMode = "Fast Attack"
+
+	local RegisterAttack = replicated:WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RE/RegisterAttack")
+	local RegisterHit = replicated:WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RE/RegisterHit")
+
+	local function IsAlive(character)
+		return character and character:FindFirstChild("Humanoid") and character.Humanoid.Health > 0
+	end
+
+	local AttackDelays = {
+		["Normal Attack"] = 0.25,
+		["Fast Attack"] = 0.15,
+		["Super Attack"] = 0.05,
+		["Bear Attack"] = 0.1,
+		["Super Bear Attack"] = 0.01,
+	}
+
+	local function StopAllAttacks()
+		if _G.FastAttackLoop1 then task.cancel(_G.FastAttackLoop1) _G.FastAttackLoop1 = nil end
+		if _G.FastAttackLoop2 then task.cancel(_G.FastAttackLoop2) _G.FastAttackLoop2 = nil end
+		if _G.AutoClickLoop then task.cancel(_G.AutoClickLoop) _G.AutoClickLoop = nil end
+	end
+
+	local FastAttack1 = { Distance = 100 }
+	function FastAttack1:Attack(BasePart, OthersEnemies)
+		if not BasePart or #OthersEnemies == 0 then return end
+		RegisterAttack:FireServer(0)
+		RegisterHit:FireServer(BasePart, OthersEnemies)
+	end
+
+	local FastAttack2 = { Distance = 100 }
+	function FastAttack2:AttackNearest()
+		local OthersEnemies = {}
+		local EnemiesFolder = workspace:FindFirstChild("Enemies")
+		local CharactersFolder = workspace:FindFirstChild("Characters")
+		local BasePart = nil
+		local function ProcessFolder(folder)
+			if not folder then return nil end
+			for _, enemy in ipairs(folder:GetChildren()) do
+				local head = enemy:FindFirstChild("Head")
+				if head and IsAlive(enemy) and enemy ~= player.Character then
+					local dist = (player.Character.HumanoidRootPart.Position - head.Position).Magnitude
+					if dist < FastAttack2.Distance then
+						table.insert(OthersEnemies, { enemy, head })
+						BasePart = head
+					end
+				end
+			end
+			return BasePart
+		end
+		local Part1 = ProcessFolder(EnemiesFolder)
+		local Part2 = ProcessFolder(CharactersFolder)
+		if #OthersEnemies > 0 then
+			RegisterAttack:FireServer(0)
+			RegisterHit:FireServer(Part1 or Part2, OthersEnemies)
+		end
+	end
+
+	function StartAttacksWithMode(mode)
+		StopAllAttacks()
+		local delayTime = AttackDelays[mode] or 0.15
+		_G.Settings.FastAttackMode = mode
+		_G.FastAttackLoop1 = task.spawn(function()
+			while _G.Settings.FastAttack do
+				local char = player.Character
+				if char and IsAlive(char) then
+					local tool = char:FindFirstChildOfClass("Tool")
+					if tool and tool.ToolTip ~= "Gun" then
+						local enemies = {}
+						local basePart = nil
+						if workspace.Enemies then
+							for _, enemy in ipairs(workspace.Enemies:GetChildren()) do
+								local head = enemy:FindFirstChild("Head")
+								if head and IsAlive(enemy) and enemy ~= player.Character then
+									local dist = (player.Character.HumanoidRootPart.Position - head.Position).Magnitude
+									if dist < FastAttack1.Distance then
+										table.insert(enemies, { enemy, head })
+										basePart = head
+									end
+								end
+							end
+						end
+						if #enemies > 0 and basePart then
+							RegisterAttack:FireServer(0)
+							RegisterHit:FireServer(basePart, enemies)
+						end
+					end
+				end
+				task.wait(delayTime)
+			end
+		end)
+		_G.FastAttackLoop2 = task.spawn(function()
+			while _G.Settings.FastAttack do
+				local char = player.Character
+				if char and IsAlive(char) then
+					local tool = char:FindFirstChildOfClass("Tool")
+					if tool and tool.ToolTip ~= "Gun" then
+						FastAttack2:AttackNearest()
+					end
+				end
+				task.wait(delayTime)
+			end
+		end)
+		_G.AutoClickLoop = task.spawn(function()
+			while _G.Settings.AutoClick do
+				local char = player.Character
+				if char and IsAlive(char) and char:FindFirstChildOfClass("Tool") then
+					vim2:CaptureController()
+					vim2:Button1Down(Vector2.new(1280, 672))
+				end
+				task.wait(0.1)
+			end
+		end)
+	end
+
+	-- ========================================
+	-- TẠO CÁC TAB
+	-- ========================================
+	local AllLayouts = 0
+	local Tab = {}
+
+	function Tab:T(t)
+		local TabDisable = Instance.new("Frame")
+		local Choose_2 = Instance.new("Frame")
+		local UICorner_4 = Instance.new("UICorner")
+		local NameTab_2 = Instance.new("TextLabel")
+		local Click_Tab_2 = Instance.new("TextButton")
+		local Layout = Instance.new("ScrollingFrame")
+		local UIPadding_3 = Instance.new("UIPadding")
+		local UIListLayout_3 = Instance.new("UIListLayout")
+
+		TabDisable.Name = "TabDisable"
+		TabDisable.Parent = ScrollingTab
+		TabDisable.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		TabDisable.BackgroundTransparency = 1.000
+		TabDisable.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		TabDisable.BorderSizePixel = 0
+		TabDisable.Size = UDim2.new(1, 0, 0, 25)
+
+		Choose_2.Name = "Choose"
+		Choose_2.Parent = TabDisable
+		Choose_2.BackgroundColor3 = ACCENT_COLOR
+		Choose_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		Choose_2.BorderSizePixel = 0
+		Choose_2.Position = UDim2.new(0, 0, 0, 5)
+		Choose_2.Size = UDim2.new(0, 4, 0, 15)
+		Choose_2.Visible = false
+
+		UICorner_4.CornerRadius = UDim.new(1, 0)
+		UICorner_4.Parent = Choose_2
+
+		NameTab_2.Name = "NameTab"
+		NameTab_2.Parent = TabDisable
+		NameTab_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		NameTab_2.BackgroundTransparency = 1.000
+		NameTab_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		NameTab_2.BorderSizePixel = 0
+		NameTab_2.Position = UDim2.new(0, 15, 0, 0)
+		NameTab_2.Size = UDim2.new(1, -15, 1, 0)
+		NameTab_2.Font = Enum.Font.GothamBold
+		NameTab_2.Text = t
+		NameTab_2.TextColor3 = Color3.fromRGB(255, 255, 255)
+		NameTab_2.TextSize = 12.000
+		NameTab_2.TextTransparency = 0.300
+		NameTab_2.TextXAlignment = Enum.TextXAlignment.Left
+		NameTab_2.AutoLocalize = false
+
+		Click_Tab_2.Name = "Click_Tab"
+		Click_Tab_2.Parent = TabDisable
+		Click_Tab_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		Click_Tab_2.BackgroundTransparency = 1.000
+		Click_Tab_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		Click_Tab_2.BorderSizePixel = 0
+		Click_Tab_2.Size = UDim2.new(1, 0, 1, 0)
+		Click_Tab_2.Font = Enum.Font.SourceSans
+		Click_Tab_2.Text = ""
+		Click_Tab_2.TextColor3 = Color3.fromRGB(0, 0, 0)
+		Click_Tab_2.TextSize = 14.000
+		Click_Tab_2.AutoLocalize = false
+
+		Layout.Name = "Layout"
+		Layout.Parent = LayoutList
+		Layout.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		Layout.BackgroundTransparency = 1.000
+		Layout.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		Layout.BorderSizePixel = 0
+		Layout.Selectable = false
+		Layout.Size = UDim2.new(1, 0, 1, 0)
+		Layout.CanvasSize = UDim2.new(0, 0, 1, 0)
+		Layout.ScrollBarThickness = 0
+		Layout.LayoutOrder = AllLayouts
+
+		Library:UpdateScrolling(Layout, UIListLayout_3)
+
+		UIPadding_3.Parent = Layout
+		UIPadding_3.PaddingBottom = UDim.new(0, 7)
+		UIPadding_3.PaddingLeft = UDim.new(0, 10)
+		UIPadding_3.PaddingRight = UDim.new(0, 7)
+
+		UIListLayout_3.Parent = Layout
+		UIListLayout_3.SortOrder = Enum.SortOrder.LayoutOrder
+		UIListLayout_3.Padding = UDim.new(0, 10)
+
+		if AllLayouts == 0 then
+			NameTab_2.TextTransparency = 0
+			Choose_2.Visible = true
+			UIPageLayout:JumpToIndex(0)
+			TextLabel.Text = t
+		end
+
+		Click_Tab_2.Activated:Connect(function()
+			TextLabel.Text = t
+			for i, v in next, ScrollingTab:GetChildren() do
+				if v:IsA("Frame") then
+					Library:TweenInstance(v.NameTab, 0.3, "TextTransparency", 0.3)
+					v.Choose.Visible = false
+				end
+			end
+			Library:TweenInstance(NameTab_2, 0.2, "TextTransparency", 0)
+			UIPageLayout:JumpToIndex(Layout.LayoutOrder)
+			Choose_2.Visible = true
+		end)
+
+		AllLayouts = AllLayouts + 1
+
+		local TabFunc = {}
+
+		function TabFunc:AddSection(RealNameSection)
+			local Section = Instance.new("Frame")
+			local UICorner_5 = Instance.new("UICorner")
+			local UIStroke_2 = Instance.new("UIStroke")
+			local NameSection = Instance.new("Frame")
+			local Title = Instance.new("TextLabel")
+			local Line_3 = Instance.new("Frame")
+			local UIGradient = Instance.new("UIGradient")
+			local SectionList = Instance.new("Frame")
+			local UIPadding_4 = Instance.new("UIPadding")
+			local UIListLayout_4 = Instance.new("UIListLayout")
+
+			Section.Name = "Section"
+			Section.Parent = Layout
+			Section.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			Section.BackgroundTransparency = 0.980
+			Section.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Section.BorderSizePixel = 0
+			Section.Position = UDim2.new(1.36775815, 0, 0.545454562, 0)
+			Section.Size = UDim2.new(1, 0, 0, 55)
+
+			UICorner_5.CornerRadius = UDim.new(0, 4)
+			UICorner_5.Parent = Section
+
+			UIStroke_2.Color = Color3.fromRGB(100, 100, 100)
+			UIStroke_2.Thickness = 2
+			UIStroke_2.Transparency = 0.9200000166893005
+			UIStroke_2.Parent = Section
+
+			NameSection.Name = "NameSection"
+			NameSection.Parent = Section
+			NameSection.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			NameSection.BackgroundTransparency = 1.000
+			NameSection.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			NameSection.BorderSizePixel = 0
+			NameSection.Size = UDim2.new(1, 0, 0, 30)
+
+			Title.Name = "Title"
+			Title.Parent = NameSection
+			Title.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			Title.BackgroundTransparency = 1.000
+			Title.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Title.BorderSizePixel = 0
+			Title.Size = UDim2.new(1, 0, 1, 0)
+			Title.Font = Enum.Font.GothamBold
+			Title.Text = RealNameSection
+			Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+			Title.TextSize = 14.000
+			Title.AutoLocalize = false
+
+			Line_3.Name = "Line"
+			Line_3.Parent = NameSection
+			Line_3.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			Line_3.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Line_3.BorderSizePixel = 0
+			Line_3.Position = UDim2.new(0, 0, 1, -2)
+			Line_3.Size = UDim2.new(1, 0, 0, 2)
+
+			UIGradient.Color = ColorSequence.new { 
+				ColorSequenceKeypoint.new(0.00, Color3.fromRGB(24, 24, 25)), 
+				ColorSequenceKeypoint.new(0.52, ACCENT_COLOR), 
+				ColorSequenceKeypoint.new(1.00, Color3.fromRGB(24, 24, 25)) 
+			}
+			UIGradient.Transparency = NumberSequence.new { 
+				NumberSequenceKeypoint.new(0.00, 0.53), 
+				NumberSequenceKeypoint.new(0.51, 0.00), 
+				NumberSequenceKeypoint.new(1.00, 0.51) 
+			}
+			UIGradient.Parent = Line_3
+
+			SectionList.Name = "SectionList"
+			SectionList.Parent = Section
+			SectionList.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			SectionList.BackgroundTransparency = 1.000
+			SectionList.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			SectionList.BorderSizePixel = 0
+			SectionList.Position = UDim2.new(0, 0, 0, 35)
+			SectionList.Size = UDim2.new(1, 0, 1, -35)
+
+			UIPadding_4.Parent = SectionList
+			UIPadding_4.PaddingBottom = UDim.new(0, 7)
+			UIPadding_4.PaddingLeft = UDim.new(0, 7)
+			UIPadding_4.PaddingRight = UDim.new(0, 7)
+			UIPadding_4.PaddingTop = UDim.new(0, 7)
+
+			UIListLayout_4.Parent = SectionList
+			UIListLayout_4.SortOrder = Enum.SortOrder.LayoutOrder
+			UIListLayout_4.Padding = UDim.new(0, 6)
+
+			UIListLayout_4:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+				Section.Size = UDim2.new(1, 0, 0, UIListLayout_4.AbsoluteContentSize.Y + 55)
+			end)
+
+			local SectionFunc = {}
+
+			-- Add Toggle
+			function SectionFunc:AddToggle(cftoggle)
+				local cftoggle = Library:MakeConfig({
+					Title = "Toggle",
+					Description = "",
+					Default = false,
+					Callback = function() end
+				}, cftoggle or {})
+
+				local Toggle = Instance.new("Frame")
+				local UICorner_6 = Instance.new("UICorner")
+				local Title_2 = Instance.new("TextLabel")
+				local ToggleCheck = Instance.new("Frame")
+				local UICorner_7 = Instance.new("UICorner")
+				local Check = Instance.new("Frame")
+				local UICorner_8 = Instance.new("UICorner")
+				local Toggle_Click = Instance.new("TextButton")
+				local Content = Instance.new("TextLabel")
+
+				Toggle.Name = "Toggle"
+				Toggle.Parent = SectionList
+				Toggle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Toggle.BackgroundTransparency = 0.950
+				Toggle.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Toggle.BorderSizePixel = 0
+				Toggle.Size = UDim2.new(1, 0, 0, 35)
+
+				UICorner_6.CornerRadius = UDim.new(0, 3)
+				UICorner_6.Parent = Toggle
+
+				Title_2.Name = "Title"
+				Title_2.Parent = Toggle
+				Title_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Title_2.BackgroundTransparency = 1.000
+				Title_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Title_2.BorderSizePixel = 0
+				Title_2.Position = UDim2.new(0, 10, 0, 0)
+				Title_2.Size = UDim2.new(1, -60, 1, 0)
+				Title_2.Font = Enum.Font.GothamBold
+				Title_2.Text = cftoggle.Title
+				Title_2.TextColor3 = Color3.fromRGB(255, 255, 255)
+				Title_2.TextSize = 13.000
+				Title_2.TextXAlignment = Enum.TextXAlignment.Left
+				Title_2.AutoLocalize = false
+
+				ToggleCheck.Name = "ToggleCheck"
+				ToggleCheck.Parent = Toggle
+				ToggleCheck.AnchorPoint = Vector2.new(0, 0.5)
+				ToggleCheck.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+				ToggleCheck.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				ToggleCheck.BorderSizePixel = 0
+				ToggleCheck.Position = UDim2.new(1, -50, 0.5, 0)
+				ToggleCheck.Size = UDim2.new(0, 40, 0, 22)
+
+				UICorner_7.CornerRadius = UDim.new(1, 0)
+				UICorner_7.Parent = ToggleCheck
+
+				Check.Name = "Check"
+				Check.Parent = ToggleCheck
+				Check.AnchorPoint = Vector2.new(0, 0.5)
+				Check.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+				Check.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Check.BorderSizePixel = 0
+				Check.Position = UDim2.new(0, 3, 0.5, 0)
+				Check.Size = UDim2.new(0, 16, 0, 16)
+
+				UICorner_8.CornerRadius = UDim.new(1, 0)
+				UICorner_8.Parent = Check
+
+				Toggle_Click.Name = "Toggle_Click"
+				Toggle_Click.Parent = Toggle
+				Toggle_Click.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Toggle_Click.BackgroundTransparency = 1.000
+				Toggle_Click.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Toggle_Click.BorderSizePixel = 0
+				Toggle_Click.Size = UDim2.new(1, 0, 1, 0)
+				Toggle_Click.Font = Enum.Font.SourceSans
+				Toggle_Click.Text = ""
+				Toggle_Click.TextColor3 = Color3.fromRGB(0, 0, 0)
+				Toggle_Click.TextSize = 14.000
+				Toggle_Click.AutoLocalize = false
+
+				Content.Name = "Content"
+				Content.Parent = Toggle
+				Content.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Content.BackgroundTransparency = 1.000
+				Content.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Content.BorderSizePixel = 0
+				Content.Position = UDim2.new(0, 10, 0, 22)
+				Content.Size = UDim2.new(1, -60, 1, 0)
+				Content.Font = Enum.Font.GothamBold
+				Content.Text = cftoggle.Description
+				Content.TextColor3 = Color3.fromRGB(100, 100, 100)
+				Content.TextSize = 12.000
+				Content.TextXAlignment = Enum.TextXAlignment.Left
+				Content.TextYAlignment = Enum.TextYAlignment.Top
+				Content.AutoLocalize = false
+
+				Library:UpdateContent(Content, Title_2, Toggle)
+
+				local ToggleFunc = { Value = cftoggle.Default }
+
+				function ToggleFunc:Set(Boolean)
+					if Boolean then
+						Library:TweenInstance(ToggleCheck, 0.3, "BackgroundColor3", ACCENT_COLOR)
+						Library:TweenInstance(Check, 0.3, "Position", UDim2.new(0, 22, 0.5, 0))
+						Library:TweenInstance(Check, 0.3, "BackgroundColor3", Color3.fromRGB(255, 255, 255))
+					else
+						Library:TweenInstance(ToggleCheck, 0.3, "BackgroundColor3", Color3.fromRGB(60, 60, 60))
+						Library:TweenInstance(Check, 0.3, "BackgroundColor3", Color3.fromRGB(200, 200, 200))
+						Library:TweenInstance(Check, 0.3, "Position", UDim2.new(0, 3, 0.5, 0))
+					end
+					self.Value = Boolean
+					cftoggle.Callback(Boolean)
+				end
+
+				ToggleFunc:Set(ToggleFunc.Value)
+				Toggle_Click.Activated:Connect(function()
+					ToggleFunc:Set(not ToggleFunc.Value)
+				end)
+				
+				return ToggleFunc
+			end
+
+			-- Add Button
+			function SectionFunc:AddButton(cfbutton)
+				local cfbutton = Library:MakeConfig({
+					Title = "Button",
+					Description = "",
+					Callback = function() end
+				}, cfbutton or {})
+
+				local Button = Instance.new("Frame")
+				local UICorner_9 = Instance.new("UICorner")
+				local Title_3 = Instance.new("TextLabel")
+				local Button_Click = Instance.new("TextButton")
+				local Content_2 = Instance.new("TextLabel")
+				local ImageLabel = Instance.new("ImageLabel")
+
+				Button.Name = "Button"
+				Button.Parent = SectionList
+				Button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Button.BackgroundTransparency = 0.950
+				Button.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Button.BorderSizePixel = 0
+				Button.Size = UDim2.new(1, 0, 0, 35)
+
+				UICorner_9.CornerRadius = UDim.new(0, 3)
+				UICorner_9.Parent = Button
+
+				Title_3.Name = "Title"
+				Title_3.Parent = Button
+				Title_3.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Title_3.BackgroundTransparency = 1.000
+				Title_3.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Title_3.BorderSizePixel = 0
+				Title_3.Position = UDim2.new(0, 10, 0, 0)
+				Title_3.Size = UDim2.new(1, -60, 1, 0)
+				Title_3.Font = Enum.Font.GothamBold
+				Title_3.Text = cfbutton.Title
+				Title_3.TextColor3 = Color3.fromRGB(255, 255, 255)
+				Title_3.TextSize = 13.000
+				Title_3.TextXAlignment = Enum.TextXAlignment.Left
+				Title_3.AutoLocalize = false
+
+				Button_Click.Name = "Button_Click"
+				Button_Click.Parent = Button
+				Button_Click.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Button_Click.BackgroundTransparency = 1.000
+				Button_Click.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Button_Click.BorderSizePixel = 0
+				Button_Click.Size = UDim2.new(1, 0, 1, 0)
+				Button_Click.Font = Enum.Font.SourceSans
+				Button_Click.Text = ""
+				Button_Click.TextColor3 = Color3.fromRGB(0, 0, 0)
+				Button_Click.TextSize = 14.000
+				Button_Click.AutoLocalize = false
+
+				Content_2.Name = "Content"
+				Content_2.Parent = Button
+				Content_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Content_2.BackgroundTransparency = 1.000
+				Content_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Content_2.BorderSizePixel = 0
+				Content_2.Position = UDim2.new(0, 10, 0, 22)
+				Content_2.Size = UDim2.new(1, -60, 1, 0)
+				Content_2.Font = Enum.Font.GothamBold
+				Content_2.Text = cfbutton.Description
+				Content_2.TextColor3 = Color3.fromRGB(100, 100, 100)
+				Content_2.TextSize = 12.000
+				Content_2.TextXAlignment = Enum.TextXAlignment.Left
+				Content_2.TextYAlignment = Enum.TextYAlignment.Top
+				Content_2.AutoLocalize = false
+
+				ImageLabel.Parent = Button
+				ImageLabel.AnchorPoint = Vector2.new(0, 0.5)
+				ImageLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				ImageLabel.BackgroundTransparency = 1.000
+				ImageLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				ImageLabel.BorderSizePixel = 0
+				ImageLabel.Position = UDim2.new(1, -35, 0.5, 0)
+				ImageLabel.Size = UDim2.new(0, 24, 0, 24)
+				ImageLabel.Image = "rbxassetid://85905776508942"
+
+				Library:UpdateContent(Content_2, Title_3, Button)
+
+				Button_Click.Activated:Connect(function()
+					Button.BackgroundTransparency = 0.970
+					cfbutton.Callback()
+					Library:TweenInstance(Button, 0.2, "BackgroundTransparency", 0.950)
+				end)
+			end
+
+			-- Add Dropdown
+			function SectionFunc:AddDropdown(cfdropdown)
+				local cfdropdown = Library:MakeConfig({
+					Title = "Dropdown",
+					Description = "",
+					Values = {},
+					Default = "",
+					Callback = function() end
+				}, cfdropdown or {})
+
+				local Dropdown = Instance.new("Frame")
+				local UICorner_19 = Instance.new("UICorner")
+				local Title_8 = Instance.new("TextLabel")
+				local Content_6 = Instance.new("TextLabel")
+				local Selects = Instance.new("Frame")
+				local UICorner_20 = Instance.new("UICorner")
+				local SelectText = Instance.new("TextLabel")
+				local UITextSizeConstraint = Instance.new("UITextSizeConstraint")
+				local Drop_Click = Instance.new("TextButton")
+				local ImageLabel_2 = Instance.new("ImageLabel")
+				local DropdownList = Instance.new("Frame")
+				local UIStroke_3 = Instance.new("UIStroke")
+				local UICorner_24 = Instance.new("UICorner")
+				local Topbar = Instance.new("Frame")
+				local Title_10 = Instance.new("TextLabel")
+				local Click_Dropdown = Instance.new("TextButton")
+				local Icon_4 = Instance.new("ImageLabel")
+				local Real_List = Instance.new("ScrollingFrame")
+				local UICorner_26 = Instance.new("UICorner")
+				local UIListLayout_5 = Instance.new("UIListLayout")
+				local UIPadding_5 = Instance.new("UIPadding")
+
+				Dropdown.Name = "Dropdown"
+				Dropdown.Parent = SectionList
+				Dropdown.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Dropdown.BackgroundTransparency = 0.950
+				Dropdown.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Dropdown.BorderSizePixel = 0
+				Dropdown.Size = UDim2.new(1, 0, 0, 35)
+
+				UICorner_19.CornerRadius = UDim.new(0, 3)
+				UICorner_19.Parent = Dropdown
+
+				Title_8.Name = "Title"
+				Title_8.Parent = Dropdown
+				Title_8.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Title_8.BackgroundTransparency = 1.000
+				Title_8.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Title_8.BorderSizePixel = 0
+				Title_8.Position = UDim2.new(0, 10, 0, 0)
+				Title_8.Size = UDim2.new(1, -60, 1, 0)
+				Title_8.Font = Enum.Font.GothamBold
+				Title_8.Text = cfdropdown.Title
+				Title_8.TextColor3 = Color3.fromRGB(255, 255, 255)
+				Title_8.TextSize = 13.000
+				Title_8.TextXAlignment = Enum.TextXAlignment.Left
+				Title_8.AutoLocalize = false
+
+				Content_6.Name = "Content"
+				Content_6.Parent = Dropdown
+				Content_6.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Content_6.BackgroundTransparency = 1.000
+				Content_6.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Content_6.BorderSizePixel = 0
+				Content_6.Position = UDim2.new(0, 10, 0, 22)
+				Content_6.Size = UDim2.new(1, -60, 1, 0)
+				Content_6.Font = Enum.Font.GothamBold
+				Content_6.Text = cfdropdown.Description
+				Content_6.TextColor3 = Color3.fromRGB(100, 100, 100)
+				Content_6.TextSize = 12.000
+				Content_6.TextXAlignment = Enum.TextXAlignment.Left
+				Content_6.TextYAlignment = Enum.TextYAlignment.Top
+				Content_6.AutoLocalize = false
+
+				Selects.Name = "Selects"
+				Selects.Parent = Dropdown
+				Selects.AnchorPoint = Vector2.new(0, 0.5)
+				Selects.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+				Selects.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Selects.BorderSizePixel = 0
+				Selects.Position = UDim2.new(1, -90, 0.5, 0)
+				Selects.Size = UDim2.new(0, 80, 0, 25)
+
+				UICorner_20.CornerRadius = UDim.new(0, 5)
+				UICorner_20.Parent = Selects
+
+				SelectText.Name = "SelectText"
+				SelectText.Parent = Selects
+				SelectText.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				SelectText.BackgroundTransparency = 1.000
+				SelectText.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				SelectText.BorderSizePixel = 0
+				SelectText.Position = UDim2.new(0, 3, 0, 0)
+				SelectText.Size = UDim2.new(1, -25, 1, 0)
+				SelectText.Font = Enum.Font.GothamBold
+				SelectText.Text = ""
+				SelectText.TextColor3 = Color3.fromRGB(255, 255, 255)
+				SelectText.TextScaled = true
+				SelectText.TextSize = 1.000
+				SelectText.TextWrapped = true
+				SelectText.AutoLocalize = false
+
+				UITextSizeConstraint.Parent = SelectText
+				UITextSizeConstraint.MaxTextSize = 12
+
+				Drop_Click.Name = "Drop_Click"
+				Drop_Click.Parent = Selects
+				Drop_Click.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Drop_Click.BackgroundTransparency = 1.000
+				Drop_Click.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Drop_Click.BorderSizePixel = 0
+				Drop_Click.Size = UDim2.new(1, 0, 1, 0)
+				Drop_Click.Font = Enum.Font.SourceSans
+				Drop_Click.Text = ""
+				Drop_Click.TextColor3 = Color3.fromRGB(0, 0, 0)
+				Drop_Click.TextSize = 14.000
+				Drop_Click.AutoLocalize = false
+
+				ImageLabel_2.Parent = Selects
+				ImageLabel_2.AnchorPoint = Vector2.new(0, 0.5)
+				ImageLabel_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				ImageLabel_2.BackgroundTransparency = 1.000
+				ImageLabel_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				ImageLabel_2.BorderSizePixel = 0
+				ImageLabel_2.Position = UDim2.new(1, -20, 0.5, 0)
+				ImageLabel_2.Size = UDim2.new(0, 15, 0, 15)
+				ImageLabel_2.Image = "rbxassetid://80845745785361"
+
+				Library:UpdateContent(Content_6, Title_8, Dropdown)
+
+				DropdownList.Name = "DropdownList"
+				DropdownList.Parent = DropdownZone
+				DropdownList.AnchorPoint = Vector2.new(0.5, 0.5)
+				DropdownList.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+				DropdownList.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				DropdownList.BorderSizePixel = 0
+				DropdownList.Position = UDim2.new(0.5, 0, 0.5, 0)
+				DropdownList.Size = UDim2.new(0, 400, 0, 250)
+				DropdownList.Visible = false
+
+				UIStroke_3.Color = Color3.fromRGB(100, 100, 100)
+				UIStroke_3.Transparency = 0.5
+				UIStroke_3.Parent = DropdownList
+
+				UICorner_24.CornerRadius = UDim.new(0, 5)
+				UICorner_24.Parent = DropdownList
+
+				Topbar.Name = "Topbar"
+				Topbar.Parent = DropdownList
+				Topbar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Topbar.BackgroundTransparency = 1.000
+				Topbar.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Topbar.BorderSizePixel = 0
+				Topbar.Size = UDim2.new(1, 0, 0, 50)
+
+				Title_10.Name = "Title"
+				Title_10.Parent = Topbar
+				Title_10.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Title_10.BackgroundTransparency = 1.000
+				Title_10.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Title_10.BorderSizePixel = 0
+				Title_10.Position = UDim2.new(0, 15, 0, 0)
+				Title_10.Size = UDim2.new(1, -200, 1, -5)
+				Title_10.Font = Enum.Font.GothamBold
+				Title_10.Text = cfdropdown.Title
+				Title_10.TextColor3 = Color3.fromRGB(255, 255, 255)
+				Title_10.TextSize = 14.000
+				Title_10.TextWrapped = true
+				Title_10.TextXAlignment = Enum.TextXAlignment.Left
+				Title_10.AutoLocalize = false
+
+				Click_Dropdown.Name = "Click_Dropdown"
+				Click_Dropdown.Parent = Topbar
+				Click_Dropdown.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Click_Dropdown.BackgroundTransparency = 1.000
+				Click_Dropdown.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Click_Dropdown.BorderSizePixel = 0
+				Click_Dropdown.Position = UDim2.new(1, -40, 0, 8)
+				Click_Dropdown.Size = UDim2.new(0, 30, 0, 30)
+				Click_Dropdown.Text = ""
+				Click_Dropdown.AutoLocalize = false
+
+				Icon_4.Name = "Icon"
+				Icon_4.Parent = Click_Dropdown
+				Icon_4.AnchorPoint = Vector2.new(0.5, 0.5)
+				Icon_4.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Icon_4.BackgroundTransparency = 1.000
+				Icon_4.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Icon_4.BorderSizePixel = 0
+				Icon_4.Position = UDim2.new(0.5, 0, 0.5, 0)
+				Icon_4.Size = UDim2.new(0, 20, 0, 20)
+				Icon_4.Image = "rbxassetid://105957381820378"
+				Icon_4.ImageRectOffset = Vector2.new(480, 0)
+				Icon_4.ImageRectSize = Vector2.new(96, 96)
+
+				Real_List.Name = "Real_List"
+				Real_List.Parent = DropdownList
+				Real_List.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+				Real_List.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Real_List.BorderSizePixel = 0
+				Real_List.Position = UDim2.new(0, 10, 0, 50)
+				Real_List.Selectable = false
+				Real_List.ScrollBarThickness = 0
+				Real_List.Size = UDim2.new(1, -20, 1, -60)
+
+				Library:UpdateScrolling(Real_List, UIListLayout_5)
+
+				UICorner_26.CornerRadius = UDim.new(0, 5)
+				UICorner_26.Parent = Real_List
+
+				UIListLayout_5.Parent = Real_List
+				UIListLayout_5.SortOrder = Enum.SortOrder.LayoutOrder
+				UIListLayout_5.Padding = UDim.new(0, 5)
+
+				UIPadding_5.Parent = Real_List
+				UIPadding_5.PaddingBottom = UDim.new(0, 7)
+				UIPadding_5.PaddingLeft = UDim.new(0, 7)
+				UIPadding_5.PaddingRight = UDim.new(0, 7)
+				UIPadding_5.PaddingTop = UDim.new(0, 7)
+
+				local UICorner_29 = Instance.new("UICorner")
+				UICorner_29.Parent = DropdownZone
+
+				Drop_Click.Activated:Connect(function()
+					DropdownZone.Visible = true
+					DropdownList.Visible = true
+					Library:TweenInstance(DropdownZone, 0.3, "BackgroundTransparency", 0.3)
+				end)
+
+				Click_Dropdown.Activated:Connect(function()
+					DropdownList.Visible = false
+					Library:TweenInstance(DropdownZone, 0.3, "BackgroundTransparency", 1)
+					wait(0.3)
+					DropdownZone.Visible = false
+				end)
+
+				local DropFunc = { Value = cfdropdown.Default }
+
+				function DropFunc:Set(cc)
+					DropFunc.Value = cc or DropFunc.Value
+					for i, v in next, Real_List:GetChildren() do
+						if v:IsA("Frame") then
+							if table.find(DropFunc.Value, v.Title.Text) then
+								Library:TweenInstance(v, 0.3, "BackgroundTransparency", 0)
+								Library:TweenInstance(v.Title, 0.3, "TextTransparency", 0)
+							else
+								Library:TweenInstance(v, 0.3, "BackgroundTransparency", 0.98)
+								Library:TweenInstance(v.Title, 0.3, "TextTransparency", 0.5)
+							end
+						end
+					end
+					local DropValue = table.concat(DropFunc.Value, ",")
+					if DropValue == "" then
+						SelectText.Text = ""
+					else
+						SelectText.Text = DropValue
+					end
+					cfdropdown.Callback(cfdropdown.Multi and DropFunc.Value or table.concat(DropFunc.Value, ""))
+				end
+
+				function DropFunc:Add(v)
+					local Option2 = Instance.new("Frame")
+					local UICorner_28 = Instance.new("UICorner")
+					local Option2_Click = Instance.new("TextButton")
+					local Title_12 = Instance.new("TextLabel")
+					local UIGradient_3 = Instance.new("UIGradient")
+
+					Option2.Name = "Option 2"
+					Option2.Parent = Real_List
+					Option2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					Option2.BackgroundTransparency = 0.980
+					Option2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+					Option2.BorderSizePixel = 0
+					Option2.Size = UDim2.new(1, 0, 0, 35)
+
+					UICorner_28.CornerRadius = UDim.new(0, 4)
+					UICorner_28.Parent = Option2
+
+					Option2_Click.Name = "Option2_Click"
+					Option2_Click.Parent = Option2
+					Option2_Click.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					Option2_Click.BackgroundTransparency = 1.000
+					Option2_Click.BorderColor3 = Color3.fromRGB(0, 0, 0)
+					Option2_Click.BorderSizePixel = 0
+					Option2_Click.Size = UDim2.new(1, 0, 1, 0)
+					Option2_Click.Font = Enum.Font.SourceSans
+					Option2_Click.Text = ""
+					Option2_Click.TextColor3 = Color3.fromRGB(0, 0, 0)
+					Option2_Click.TextSize = 14.000
+					Option2_Click.AutoLocalize = false
+
+					Title_12.Name = "Title"
+					Title_12.Parent = Option2
+					Title_12.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					Title_12.BackgroundTransparency = 1.000
+					Title_12.BorderColor3 = Color3.fromRGB(0, 0, 0)
+					Title_12.BorderSizePixel = 0
+					Title_12.Size = UDim2.new(1, 0, 1, 0)
+					Title_12.Font = Enum.Font.GothamBold
+					Title_12.Text = v
+					Title_12.TextColor3 = Color3.fromRGB(255, 255, 255)
+					Title_12.TextSize = 13.000
+					Title_12.TextTransparency = 0.500
+					Title_12.AutoLocalize = false
+
+					UIGradient_3.Color = ColorSequence.new { 
+						ColorSequenceKeypoint.new(0.00, Color3.fromRGB(0, 0, 0)), 
+						ColorSequenceKeypoint.new(0.51, ACCENT_COLOR), 
+						ColorSequenceKeypoint.new(1.00, Color3.fromRGB(0, 0, 0)) 
+					}
+					UIGradient_3.Rotation = 0.9900000095367432
+					UIGradient_3.Transparency = NumberSequence.new { 
+						NumberSequenceKeypoint.new(0.00, 0.50), 
+						NumberSequenceKeypoint.new(0.50, 0.49), 
+						NumberSequenceKeypoint.new(1.00, 0.44) 
+					}
+					UIGradient_3.Parent = Option2
+
+					Option2_Click.Activated:Connect(function()
+						if cfdropdown.Multi then
+							if Option2.BackgroundTransparency < 0.950 then
+								for i, v in next, DropFunc.Value do
+									if v == Title_12.Text then
+										table.remove(DropFunc.Value, i)
+									end
+								end
+								DropFunc:Set(DropFunc.Value)
+							else
+								table.insert(DropFunc.Value, Title_12.Text)
+								DropFunc:Set(DropFunc.Value)
+							end
+						else
+							DropFunc.Value = { Title_12.Text }
+							DropFunc:Set(DropFunc.Value)
+						end
+					end)
+				end
+
+				function DropFunc:Clear()
+					for i, v in next, Real_List:GetChildren() do
+						if v:IsA("Frame") then
+							v:Destroy()
+						end
+					end
+				end
+
+				function DropFunc:Refresh(NewList)
+					self:Clear()
+					for i, v in next, NewList do
+						self:Add(v)
+					end
+				end
+
+				DropFunc:Refresh(cfdropdown.Values)
+				DropFunc:Set(typeof(cfdropdown.Default) == "string" and { cfdropdown.Default } or cfdropdown.Default)
+				return DropFunc
+			end
+
+			-- Add Input
+			function SectionFunc:AddInput(cftextbox)
+				local cftextbox = Library:MakeConfig({
+					Title = "Textbox",
+					Description = "",
+					PlaceHolder = "",
+					Default = "",
+					Callback = function() end
+				}, cftextbox or {})
+
+				local Input = Instance.new("Frame")
+				local UICorner_17 = Instance.new("UICorner")
+				local Title_7 = Instance.new("TextLabel")
+				local Content_5 = Instance.new("TextLabel")
+				local TextboxFrame = Instance.new("Frame")
+				local UICorner_18 = Instance.new("UICorner")
+				local RealTextBox = Instance.new("TextBox")
+				local WritingIcon = Instance.new("ImageLabel")
+
+				Input.Name = "Input"
+				Input.Parent = SectionList
+				Input.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Input.BackgroundTransparency = 0.950
+				Input.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Input.BorderSizePixel = 0
+				Input.Size = UDim2.new(1, 0, 0, 35)
+
+				UICorner_17.CornerRadius = UDim.new(0, 3)
+				UICorner_17.Parent = Input
+
+				Title_7.Name = "Title"
+				Title_7.Parent = Input
+				Title_7.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Title_7.BackgroundTransparency = 1.000
+				Title_7.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Title_7.BorderSizePixel = 0
+				Title_7.Position = UDim2.new(0, 10, 0, 0)
+				Title_7.Size = UDim2.new(1, -60, 1, 0)
+				Title_7.Font = Enum.Font.GothamBold
+				Title_7.Text = cftextbox.Title
+				Title_7.TextColor3 = Color3.fromRGB(255, 255, 255)
+				Title_7.TextSize = 13.000
+				Title_7.TextXAlignment = Enum.TextXAlignment.Left
+				Title_7.AutoLocalize = false
+
+				Content_5.Name = "Content"
+				Content_5.Parent = Input
+				Content_5.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Content_5.BackgroundTransparency = 1.000
+				Content_5.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Content_5.BorderSizePixel = 0
+				Content_5.Position = UDim2.new(0, 10, 0, 22)
+				Content_5.Size = UDim2.new(1, -160, 1, 0)
+				Content_5.Font = Enum.Font.GothamBold
+				Content_5.Text = cftextbox.Description
+				Content_5.TextColor3 = Color3.fromRGB(100, 100, 100)
+				Content_5.TextSize = 12.000
+				Content_5.TextXAlignment = Enum.TextXAlignment.Left
+				Content_5.TextYAlignment = Enum.TextYAlignment.Top
+				Content_5.AutoLocalize = false
+
+				Library:UpdateContent(Content_5, Title_7, Input)
+
+				TextboxFrame.Name = "TextboxFrame"
+				TextboxFrame.Parent = Input
+				TextboxFrame.AnchorPoint = Vector2.new(0, 0.5)
+				TextboxFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+				TextboxFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				TextboxFrame.BorderSizePixel = 0
+				TextboxFrame.Position = UDim2.new(1, -140, 0.5, 0)
+				TextboxFrame.Size = UDim2.new(0, 130, 0, 28)
+
+				UICorner_18.CornerRadius = UDim.new(0, 3)
+				UICorner_18.Parent = TextboxFrame
+
+				RealTextBox.Name = "RealTextBox"
+				RealTextBox.Parent = TextboxFrame
+				RealTextBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				RealTextBox.BackgroundTransparency = 1.000
+				RealTextBox.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				RealTextBox.BorderSizePixel = 0
+				RealTextBox.Position = UDim2.new(0, 35, 0, 0)
+				RealTextBox.Size = UDim2.new(1, -35, 1, 0)
+				RealTextBox.Font = Enum.Font.GothamBold
+				RealTextBox.PlaceholderText = cftextbox.PlaceHolder
+				RealTextBox.Text = cftextbox.Default
+				RealTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+				RealTextBox.TextSize = 12.000
+				RealTextBox.TextXAlignment = Enum.TextXAlignment.Left
+				RealTextBox.AutoLocalize = false
+
+				WritingIcon.Name = "WritingIcon"
+				WritingIcon.Parent = TextboxFrame
+				WritingIcon.AnchorPoint = Vector2.new(0, 0.5)
+				WritingIcon.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				WritingIcon.BackgroundTransparency = 1.000
+				WritingIcon.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				WritingIcon.BorderSizePixel = 0
+				WritingIcon.Position = UDim2.new(0, 10, 0.5, 0)
+				WritingIcon.Size = UDim2.new(0, 15, 0, 15)
+				WritingIcon.Image = "rbxassetid://126409600467363"
+
+				RealTextBox.FocusLost:Connect(function()
+					cftextbox.Callback(RealTextBox.Text)
+				end)
+
+				cftextbox.Callback(RealTextBox.Text)
+			end
+
+			-- Add Slider
+			function SectionFunc:AddSlider(cfslider)
+				local cfslider = Library:MakeConfig({
+					Title = "Slider",
+					Description = "",
+					Max = 100,
+					Min = 1,
+					Increment = 1,
+					Default = 1,
+					Callback = function() end
+				}, cfslider or {})
+
+				local Slider = Instance.new("Frame")
+				local UICorner_10 = Instance.new("UICorner")
+				local Title_4 = Instance.new("TextLabel")
+				local Content_3 = Instance.new("TextLabel")
+				local SliderFrame = Instance.new("Frame")
+				local UICorner_11 = Instance.new("UICorner")
+				local SliderDraggable = Instance.new("Frame")
+				local UICorner_12 = Instance.new("UICorner")
+				local Circle = Instance.new("Frame")
+				local UICorner_13 = Instance.new("UICorner")
+				local SliderValue = Instance.new("TextBox")
+				local UICorner_14 = Instance.new("UICorner")
+
+				Slider.Name = "Slider"
+				Slider.Parent = SectionList
+				Slider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Slider.BackgroundTransparency = 0.950
+				Slider.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Slider.BorderSizePixel = 0
+				Slider.Size = UDim2.new(1, 0, 0, 35)
+
+				UICorner_10.CornerRadius = UDim.new(0, 3)
+				UICorner_10.Parent = Slider
+
+				Title_4.Name = "Title"
+				Title_4.Parent = Slider
+				Title_4.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Title_4.BackgroundTransparency = 1.000
+				Title_4.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Title_4.BorderSizePixel = 0
+				Title_4.Position = UDim2.new(0, 10, 0, 0)
+				Title_4.Size = UDim2.new(1, -60, 1, 0)
+				Title_4.Font = Enum.Font.GothamBold
+				Title_4.Text = cfslider.Title
+				Title_4.TextColor3 = Color3.fromRGB(255, 255, 255)
+				Title_4.TextSize = 13.000
+				Title_4.TextXAlignment = Enum.TextXAlignment.Left
+				Title_4.AutoLocalize = false
+
+				Content_3.Name = "Content"
+				Content_3.Parent = Slider
+				Content_3.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Content_3.BackgroundTransparency = 1.000
+				Content_3.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Content_3.BorderSizePixel = 0
+				Content_3.Position = UDim2.new(0, 10, 0, 22)
+				Content_3.Size = UDim2.new(1, -160, 1, 0)
+				Content_3.Font = Enum.Font.GothamBold
+				Content_3.Text = cfslider.Description
+				Content_3.TextColor3 = Color3.fromRGB(100, 100, 100)
+				Content_3.TextSize = 12.000
+				Content_3.TextXAlignment = Enum.TextXAlignment.Left
+				Content_3.TextYAlignment = Enum.TextYAlignment.Top
+				Content_3.AutoLocalize = false
+
+				Library:UpdateContent(Content_3, Title_4, Slider)
+
+				SliderFrame.Name = "SliderFrame"
+				SliderFrame.Parent = Slider
+				SliderFrame.AnchorPoint = Vector2.new(0, 0.5)
+				SliderFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+				SliderFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				SliderFrame.BorderSizePixel = 0
+				SliderFrame.Position = UDim2.new(1, -140, 0.5, 0)
+				SliderFrame.Size = UDim2.new(0, 130, 0, 8)
+
+				UICorner_11.CornerRadius = UDim.new(1, 0)
+				UICorner_11.Parent = SliderFrame
+
+				SliderDraggable.Name = "SliderDraggable"
+				SliderDraggable.Parent = SliderFrame
+				SliderDraggable.BackgroundColor3 = ACCENT_COLOR
+				SliderDraggable.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				SliderDraggable.BorderSizePixel = 0
+				SliderDraggable.Size = UDim2.new(0, 20, 1, 0)
+
+				UICorner_12.CornerRadius = UDim.new(1, 0)
+				UICorner_12.Parent = SliderDraggable
+
+				Circle.Name = "Circle"
+				Circle.Parent = SliderDraggable
+				Circle.AnchorPoint = Vector2.new(0, 0.100000001)
+				Circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Circle.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Circle.BorderSizePixel = 0
+				Circle.Position = UDim2.new(1, -6, 0, 0)
+				Circle.Size = UDim2.new(0, 12, 0, 12)
+
+				UICorner_13.CornerRadius = UDim.new(1, 0)
+				UICorner_13.Parent = Circle
+
+				SliderValue.Name = "SliderValue"
+				SliderValue.Parent = Slider
+				SliderValue.AnchorPoint = Vector2.new(0, 0.5)
+				SliderValue.BackgroundColor3 = ACCENT_COLOR
+				SliderValue.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				SliderValue.BorderSizePixel = 0
+				SliderValue.Position = UDim2.new(1, -185, 0.5, 0)
+				SliderValue.Size = UDim2.new(0, 35, 0, 20)
+				SliderValue.Font = Enum.Font.GothamBold
+				SliderValue.PlaceholderColor3 = Color3.fromRGB(178, 178, 178)
+				SliderValue.PlaceholderText = "..."
+				SliderValue.Text = ""
+				SliderValue.TextColor3 = Color3.fromRGB(255, 255, 255)
+				SliderValue.TextSize = 11.000
+				SliderValue.AutoLocalize = false
+
+				UICorner_14.CornerRadius = UDim.new(0, 2)
+				UICorner_14.Parent = SliderValue
+
+				local SliderFunc = {Value = cfslider.Default}
+				local Dragging = false
+
+				local function Round(Number, Factor)
+					local Result = math.floor(Number / Factor + (math.sign(Number) * 0.5)) * Factor
+					if Result < 0 then Result = Result + Factor end
+					return Result
+				end
+
+				function SliderFunc:Set(Value)
+					Value = math.clamp(Round(Value, cfslider.Increment), cfslider.Min, cfslider.Max)
+					SliderFunc.Value = Value
+					SliderValue.Text = tostring(Value)
+					TW:Create(SliderDraggable, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+						{ Size = UDim2.fromScale((Value - cfslider.Min) / (cfslider.Max - cfslider.Min), 1) }
+					):Play()
+				end
+
+				SliderFrame.InputBegan:Connect(function(Input)
+					if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+						Dragging = true
+						local SizeScale = math.clamp((Input.Position.X - SliderFrame.AbsolutePosition.X) / SliderFrame.AbsoluteSize.X, 0, 1)
+						SliderFunc:Set(cfslider.Min + ((cfslider.Max - cfslider.Min) * SizeScale))
+					end
+				end)
+
+				game:GetService("UserInputService").InputEnded:Connect(function(Input)
+					if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+						if Dragging then
+							Dragging = false
+							cfslider.Callback(SliderFunc.Value)
+						end
+					end
+				end)
+
+				game:GetService("UserInputService").InputChanged:Connect(function(Input)
+					if Dragging and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
+						local SizeScale = math.clamp((Input.Position.X - SliderFrame.AbsolutePosition.X) / SliderFrame.AbsoluteSize.X, 0, 1)
+						SliderFunc:Set(cfslider.Min + ((cfslider.Max - cfslider.Min) * SizeScale))
+					end
+				end)
+
+				SliderValue:GetPropertyChangedSignal("Text"):Connect(function()
+					local Valid = SliderValue.Text:gsub("[^%d]", "")
+					if Valid ~= "" then
+						local ValidNumber = math.min(tonumber(Valid), cfslider.Max)
+						SliderValue.Text = tostring(ValidNumber)
+					else
+						SliderValue.Text = tostring(Valid)
+					end
+				end)
+
+				SliderValue.FocusLost:Connect(function()
+					if SliderValue.Text ~= "" then
+						SliderFunc:Set(tonumber(SliderValue.Text))
+					else
+						SliderFunc:Set(0)
+					end
+				end)
+
+				SliderFunc:Set(tonumber(cfslider.Default))
+				return SliderFunc
+			end
+
+			-- Add Separator
+			function SectionFunc:AddSeperator(args)
+				local Seperator = Instance.new("Frame")
+				local Title_5 = Instance.new("TextLabel")
+
+				Seperator.Name = "Seperator"
+				Seperator.Parent = SectionList
+				Seperator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Seperator.BackgroundTransparency = 1.000
+				Seperator.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Seperator.BorderSizePixel = 0
+				Seperator.Size = UDim2.new(1, 0, 0, 20)
+
+				Title_5.Name = "Title"
+				Title_5.Parent = Seperator
+				Title_5.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Title_5.BackgroundTransparency = 1.000
+				Title_5.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				Title_5.BorderSizePixel = 0
+				Title_5.Position = UDim2.new(0, 10, 0, 0)
+				Title_5.Size = UDim2.new(1, -10, 1, 0)
+				Title_5.Font = Enum.Font.GothamBold
+				Title_5.Text = args
+				Title_5.TextColor3 = Color3.fromRGB(255, 255, 255)
+				Title_5.TextSize = 13.000
+				Title_5.TextXAlignment = Enum.TextXAlignment.Left
+				Title_5.AutoLocalize = false
+			end
+
+			-- Add Paragraph
+			function SectionFunc:AddParagraph(cfpara)
+				local cfpara = Library:MakeConfig({
+					Title = "Paragraph",
+					Content = ""
+				}, cfpara or {})
+
+				local Paragraph = Instance.new("Frame")
+				local UICorner_16 = Instance.new("UICorner")
+				local Title_6 = Instance.new("TextLabel")
+				local Content_4 = Instance.new("TextLabel")
+				local ParaFunc = {}
+
+				Paragraph.Name = "Paragraph"
+				Paragraph.Parent = SectionList
+				Paragraph.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				Paragraph.BackgroundTransparency = 0.950
+				Paragraph.BorderSizePixel = 0
+				Paragraph.Size = UDim2.new(1, 0, 0, 45)
+				Paragraph.AutomaticSize = Enum.AutomaticSize.Y
+
+				UICorner_16.CornerRadius = UDim.new(0, 3)
+				UICorner_16.Parent = Paragraph
+
+				Title_6.Name = "Title"
+				Title_6.Parent = Paragraph
+				Title_6.BackgroundTransparency = 1
+				Title_6.Position = UDim2.new(0, 10, 0, 7)
+				Title_6.Size = UDim2.new(1, -20, 0, 16)
+				Title_6.Font = Enum.Font.GothamBold
+				Title_6.Text = cfpara.Title
+				Title_6.TextColor3 = Color3.fromRGB(255, 255, 255)
+				Title_6.TextSize = 13
+				Title_6.TextXAlignment = Enum.TextXAlignment.Left
+
+				Content_4.Name = "Content"
+				Content_4.Parent = Paragraph
+				Content_4.BackgroundTransparency = 1
+				Content_4.Position = UDim2.new(0, 10, 0, 25)
+				Content_4.Size = UDim2.new(1, -20, 0, 0)
+				Content_4.Font = Enum.Font.GothamBold
+				Content_4.Text = cfpara.Content
+				Content_4.TextColor3 = Color3.fromRGB(100, 100, 100)
+				Content_4.TextSize = 12
+				Content_4.TextXAlignment = Enum.TextXAlignment.Left
+				Content_4.TextYAlignment = Enum.TextYAlignment.Top
+				Content_4.TextWrapped = true
+				Content_4.AutomaticSize = Enum.AutomaticSize.Y
+
+				Library:UpdateContent(Content_4, Title_6, Paragraph)
+
+				function ParaFunc:SetTitle(args)
+					Title_6.Text = args
+				end
+
+				function ParaFunc:SetDesc(args)
+					Content_4.Text = args
+				end
+
+				return ParaFunc
+			end
+
+			-- Add Discord
+			function SectionFunc:AddDiscord(DiscordTitle, InviteCode)
+				local DiscordCard = Instance.new("Frame")
+				local UICorner = Instance.new("UICorner")
+				local Icon = Instance.new("ImageLabel")
+				local Title = Instance.new("TextLabel")
+				local SubTitle = Instance.new("TextLabel")
+				local JoinBtn = Instance.new("TextButton")
+				local BtnCorner = Instance.new("UICorner")
+
+				DiscordCard.Name = "DiscordCard"
+				DiscordCard.Parent = SectionList
+				DiscordCard.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+				DiscordCard.BackgroundTransparency = 0.4
+				DiscordCard.BorderSizePixel = 0
+				DiscordCard.Size = UDim2.new(1, 0, 0, 65)
+
+				UICorner.CornerRadius = UDim.new(0, 9)
+				UICorner.Parent = DiscordCard
+
+				Icon.Parent = DiscordCard
+				Icon.BackgroundTransparency = 1
+				Icon.Position = UDim2.new(0, 10, 0, 10)
+				Icon.Size = UDim2.new(0, 45, 0, 45)
+				Icon.Image = "rbxassetid://81844334586058"
+
+				Title.Parent = DiscordCard
+				Title.BackgroundTransparency = 1
+				Title.Position = UDim2.new(0, 65, 0, 15)
+				Title.Size = UDim2.new(1, -140, 0, 20)
+				Title.Font = Enum.Font.GothamBold
+				Title.Text = DiscordTitle or "Nduc Hub"
+				Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+				Title.TextSize = 14
+				Title.TextXAlignment = Enum.TextXAlignment.Left
+				Title.AutoLocalize = false
+
+				SubTitle.Parent = DiscordCard
+				SubTitle.BackgroundTransparency = 1
+				SubTitle.Position = UDim2.new(0, 65, 0, 32)
+				SubTitle.Size = UDim2.new(1, -140, 0, 20)
+				SubTitle.Font = Enum.Font.Gotham
+				SubTitle.Text = "Click to join the server"
+				SubTitle.TextColor3 = Color3.fromRGB(180, 180, 180)
+				SubTitle.TextSize = 11
+				SubTitle.TextXAlignment = Enum.TextXAlignment.Left
+				SubTitle.AutoLocalize = false
+
+				JoinBtn.Name = "JoinBtn"
+				JoinBtn.Parent = DiscordCard
+				JoinBtn.BackgroundColor3 = ACCENT_COLOR
+				JoinBtn.Position = UDim2.new(1, -75, 0, 17)
+				JoinBtn.Size = UDim2.new(0, 65, 0, 30)
+				JoinBtn.Font = Enum.Font.GothamBold
+				JoinBtn.Text = "Join"
+				JoinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+				JoinBtn.TextSize = 13
+				JoinBtn.AutoLocalize = false
+
+				BtnCorner.CornerRadius = UDim.new(0, 4)
+				BtnCorner.Parent = JoinBtn
+
+				JoinBtn.MouseButton1Click:Connect(function()
+					if setclipboard then setclipboard("https://discord.gg/" .. InviteCode) end
+					local req = (syn and syn.request) or (http and http.request) or http_request or request
+					if req then
+						pcall(function()
+							req({
+								Url = "http://127.0.0.1:6463/rpc?v=1",
+								Method = "POST",
+								Headers = { ["Content-Type"] = "application/json", ["Origin"] = "https://discord.com" },
+								Body = HttpService:JSONEncode({
+									cmd = "INVITE_BROWSER",
+									nonce = HttpService:GenerateGUID(false),
+									args = { code = InviteCode }
+								})
+							})
+						end)
+					end
+					JoinBtn.Text = "Copied!"
+					task.wait(2)
+					JoinBtn.Text = "Join"
+				end)
+			end
+
+			return SectionFunc
+		end
+
+		return TabFunc
+	end
+
+	-- ========================================
+	-- TẠO CÁC TAB CHÍNH (GIỐNG BEAR HUB)
+	-- ========================================
+	local InfoTab = Tab:T("Info")
+	local StatusTab = Tab:T("Status")
+	local FarmingTab = Tab:T("Farming")
+	local QuestsTab = Tab:T("Quests")
+	local FarmSettingsTab = Tab:T("Farm Settings")
+	local FishingTab = Tab:T("Auto Fishing")
+	local SeaEventTab = Tab:T("Sea Event")
+	local VolcanoTab = Tab:T("Volcano/Dojo")
+	local MirageTab = Tab:T("Mirage/Race")
+	local FruitsTab = Tab:T("Fruits")
+	local RaidTab = Tab:T("Raid")
+	local TeleportTab = Tab:T("Teleport")
+	local PvPTab = Tab:T("PvP")
+	local EspTab = Tab:T("ESP/Stats")
+	local ShopTab = Tab:T("Shop")
+	local SettingsTab = Tab:T("Settings")
+
+	-- ========================================
+	-- INFO TAB
+	-- ========================================
+	local InfoSection = InfoTab:AddSection("Information")
+	
+	InfoSection:AddParagraph({
+		Title = "Nduc Hub",
+		Content = "• Script by Nduc\n• Blox Fruits\n• Best Free Script"
+	})
+	
+	InfoSection:AddDiscord("Nduc Hub Discord", "nduchub")
+	
+	-- ========================================
+	-- STATUS TAB
+	-- ========================================
+	local StatusSection = StatusTab:AddSection("Server Status")
+	
+	local TimePara = StatusSection:AddParagraph({ Title = "Time", Content = "" })
+	local MirageStatus = StatusSection:AddParagraph({ Title = "Mirage Island", Content = "❌" })
+	local KitsuneStatus = StatusSection:AddParagraph({ Title = "Kitsune Island", Content = "❌" })
+	local FullMoonStatus = StatusSection:AddParagraph({ Title = "Full Moon", Content = "" })
+	
+	task.spawn(function()
+		while task.wait(1) do
+			pcall(function()
+				local date = os.date("*t")
+				local hour = (date.hour) % 24
+				local ampm = hour < 12 and "AM" or "PM"
+				local timezone = string.format("%02i:%02i:%02i %s", ((hour - 1) % 12) + 1, date.min, date.sec, ampm)
+				local datetime = string.format("%02d/%02d/%04d", date.day, date.month, date.year)
+				TimePara:SetDesc(datetime .. " - " .. timezone)
+				
+				if workspace._WorldOrigin.Locations:FindFirstChild('Mirage Island') then
+					MirageStatus:SetDesc("✅ Active")
+				else
+					MirageStatus:SetDesc("❌ Not Found")
+				end
+				
+				if workspace.Map:FindFirstChild("KitsuneIsland") then
+					KitsuneStatus:SetDesc("✅ Active")
+				else
+					KitsuneStatus:SetDesc("❌ Not Found")
+				end
+				
+				local moonId = Lighting.Sky and Lighting.Sky.MoonTextureId or ""
+				if moonId == "http://www.roblox.com/asset/?id=9709149431" then
+					FullMoonStatus:SetDesc("🌕 Full Moon Active")
+				else
+					FullMoonStatus:SetDesc("🌑 Not Full Moon")
+				end
+			end)
+		end
+	end)
+	
+	StatusSection:AddButton({
+		Name = "Hop Server",
+		Callback = function()
+			Hop()
+		end
+	})
+	
+	-- ========================================
+	-- FARMING TAB
+	-- ========================================
+	local FarmMainSection = FarmingTab:AddSection("Auto Farm Main")
+	
+	-- Weapon Selection
+	FarmMainSection:AddDropdown({
+		Title = "Select Weapon",
+		Values = {"Melee", "Sword", "Blox Fruit", "Gun"},
+		Default = "Melee",
+		Callback = function(v)
+			_G.ChooseWP = v
+		end
+	})
+	
+	-- Farm Mode Selection
+	FarmMainSection:AddDropdown({
+		Title = "Select Farm Mode",
+		Values = {"Level", "Bone", "Cake Prince", "Tyrant Of The Skies"},
+		Default = "Level",
+		Callback = function(v)
+			_G.SelectedFarmMode = v
+			SaveSettings()
+		end
+	})
+	
+	-- Start Farm Toggle
+	local StartFarmToggle = FarmMainSection:AddToggle({
+		Title = "Start Farm",
+		Default = GetSetting("StartFarm", false),
+		Callback = function(v)
+			_G.StartFarm = v
+			_G.Level = false
+			_G.AutoFarm_Bone = false
+			_G.AutoFarm_Cake = false
+			_G.AutoTyrant = false
+			
+			if v then
+				if _G.SelectedFarmMode == "Level" then
+					_G.Level = true
+				elseif _G.SelectedFarmMode == "Bone" then
+					_G.AutoFarm_Bone = true
+				elseif _G.SelectedFarmMode == "Cake Prince" then
+					_G.AutoFarm_Cake = true
+				elseif _G.SelectedFarmMode == "Tyrant Of The Skies" then
+					_G.AutoTyrant = true
+				end
+			end
+			SaveSettings()
+		end
+	})
+	
+	-- Accept Quests Toggle
+	FarmMainSection:AddToggle({
+		Title = "Accept Quests",
+		Default = GetSetting("AcceptQuest", false),
+		Callback = function(v)
+			_G.AcceptQuest = v
+			SaveSettings()
+		end
+	})
+	
+	-- Auto Haki Toggle
+	FarmMainSection:AddToggle({
+		Title = "Auto Active Haki",
+		Default = GetSetting("AutoHaki", true),
+		Callback = function(v)
+			_G.AutoHaki = v
+			SaveSettings()
+		end
+	})
+	
+	task.spawn(function()
+		while task.wait(1) do
+			if _G.AutoHaki and plr.Character and not plr.Character:FindFirstChild("HasBuso") then
+				pcall(function()
+					replicated.Remotes.CommF_:InvokeServer("Buso")
+				end)
+			end
+		end
+	end)
+	
+	-- ========================================
+	-- FARM SETTINGS TAB
+	-- ========================================
+	local AttackSection = FarmSettingsTab:AddSection("Attack Settings")
+	
+	AttackSection:AddDropdown({
+		Title = "Select Attack Mode",
+		Values = {"Normal Attack", "Fast Attack", "Super Attack", "Bear Attack", "Super Bear Attack"},
+		Default = "Fast Attack",
+		Callback = function(mode)
+			StartAttacksWithMode(mode)
+		end
+	})
+	
+	AttackSection:AddToggle({
+		Title = "Enable Fast Attack",
+		Default = true,
+		Callback = function(v)
+			_G.Settings.FastAttack = v
+			if v then
+				StartAttacksWithMode(_G.Settings.FastAttackMode)
+			else
+				StopAllAttacks()
+			end
+		end
+	})
+	
+	AttackSection:AddToggle({
+		Title = "Enable Auto Click",
+		Default = false,
+		Callback = function(v)
+			_G.Settings.AutoClick = v
+		end
+	})
+	
+	local RangeSection = FarmSettingsTab:AddSection("Range Settings")
+	
+	RangeSection:AddInput({
+		Title = "Bring Mobs Range",
+		PlaceHolder = "235",
+		Default = tostring(_G.BringRange),
+		Callback = function(v)
+			local num = tonumber(v)
+			if num and num > 0 then
+				_G.BringRange = num
+			end
+		end
+	})
+	
+	RangeSection:AddInput({
+		Title = "Select Farm Height",
+		PlaceHolder = "20",
+		Default = tostring(_G.MobHeight),
+		Callback = function(v)
+			local num = tonumber(v)
+			if num and num > 0 then
+				_G.MobHeight = num
+			end
+		end
+	})
+	
+	local MiscSection = FarmSettingsTab:AddSection("Misc Settings")
+	
+	MiscSection:AddToggle({
+		Title = "Anti AFK",
+		Default = true,
+		Callback = function(v)
+			_G.AntiAFK = v
+		end
+	})
+	
+	MiscSection:AddToggle({
+		Title = "No Clip",
+		Default = GetSetting("NoClip", false),
+		Callback = function(v)
+			_G.NoClip = v
+			SaveSettings()
+		end
+	})
+	
+	-- ========================================
+	-- ESP TAB
+	-- ========================================
+	local EspSection = EspTab:AddSection("ESP Settings")
+	
+	EspSection:AddToggle({
+		Title = "ESP Player",
+		Default = GetSetting("ESPPlayer", false),
+		Callback = function(v)
+			_G.ESPPlayer = v
+			SaveSettings()
+		end
+	})
+	
+	EspSection:AddToggle({
+		Title = "ESP Island",
+		Default = GetSetting("ESPIsland", false),
+		Callback = function(v)
+			_G.ESPIsland = v
+			SaveSettings()
+		end
+	})
+	
+	EspSection:AddToggle({
+		Title = "ESP Fruit",
+		Default = GetSetting("ESPFruit", false),
+		Callback = function(v)
+			_G.ESPFruit = v
+			SaveSettings()
+		end
+	})
+	
+	EspSection:AddToggle({
+		Title = "ESP Chest",
+		Default = GetSetting("ESPChest", false),
+		Callback = function(v)
+			_G.ESPChest = v
+			SaveSettings()
+		end
+	})
+	
+	-- ========================================
+	-- STATS TAB
+	-- ========================================
+	local StatsSection = EspTab:AddSection("Stats Upgrade")
+	
+	local StatsValue = 10
+	
+	StatsSection:AddSlider({
+		Title = "Stats Value",
+		Min = 0,
+		Max = 1000,
+		Default = 10,
+		Increment = 1,
+		Callback = function(v)
+			StatsValue = v
+		end
+	})
+	
+	StatsSection:AddToggle({
+		Title = "Auto Melee",
+		Default = false,
+		Callback = function(v)
+			_G.AutoMelee = v
+		end
+	})
+	
+	StatsSection:AddToggle({
+		Title = "Auto Defense",
+		Default = false,
+		Callback = function(v)
+			_G.AutoDefense = v
+		end
+	})
+	
+	-- ========================================
+	-- SETTINGS TAB
+	-- ========================================
+	local GraphicSection = SettingsTab:AddSection("Graphics")
+	
+	GraphicSection:AddButton({
+		Name = "Low CPU Mode",
+		Callback = function()
+			LowCpu()
+		end
+	})
+	
+	GraphicSection:AddButton({
+		Name = "Remove Fog",
+		Callback = function()
+			pcall(function()
+				if Lighting:FindFirstChild("LightingLayers") then Lighting.LightingLayers:Destroy() end
+				if Lighting:FindFirstChild("FantasySky") then Lighting.FantasySky:Destroy() end
+			end)
+		end
+	})
+	
+	GraphicSection:AddToggle({
+		Title = "Full Bright",
+		Default = false,
+		Callback = function(v)
+			if v then
+				Lighting.Ambient = Color3.new(1, 1, 1)
+				Lighting.Brightness = 2
+			else
+				Lighting.Ambient = Color3.new(0, 0, 0)
+				Lighting.Brightness = 0
+			end
+		end
+	})
+	
+	local MiscSettingSection = SettingsTab:AddSection("Misc")
+	
+	MiscSettingSection:AddToggle({
+		Title = "Disable Notify",
+		Default = false,
+		Callback = function(v)
+			if v then
+				replicated.Assets.GUI.DamageCounter.Enabled = false
+				plr.PlayerGui.Notifications.Enabled = false
+			else
+				replicated.Assets.GUI.DamageCounter.Enabled = true
+				plr.PlayerGui.Notifications.Enabled = true
+			end
+		end
+	})
+	
+	-- ========================================
+	-- KHỞI TẠO CÁC LOOP TỰ ĐỘNG
+	-- ========================================
+	
+	-- Auto Level Farm
+	task.spawn(function()
+		while task.wait(0.5) do
+			if _G.Level and _G.StartFarm then
+				pcall(function()
+					local Q = QuestNeta()
+					if not Q then return end
+					
+					if not plr.PlayerGui.Main.Quest.Visible then
+						_tp(Q[6])
+						if (plr.Character.HumanoidRootPart.Position - Q[6].Position).Magnitude <= 50 then
+							task.wait(1.9)
+							replicated.Remotes.CommF_:InvokeServer("StartQuest", Q[3], Q[2])
+						end
+						return
+					end
+					
+					local mob = GetConnectionEnemies(Q[1])
+					if mob and mob:FindFirstChild("HumanoidRootPart") then
+						_tp(mob.HumanoidRootPart.CFrame * CFrame.new(0, _G.MobHeight, 0))
+						EquipWeapon(_G.SelectWeapon)
+						if G and G.Kill then
+							G.Kill(mob, true)
+						end
+					else
+						_tp(Q[4])
+					end
+				end)
+			end
+		end
+	end)
+	
+	-- No Clip Loop
+	task.spawn(function()
+		while task.wait(0.5) do
+			if _G.NoClip and plr.Character then
+				pcall(function()
+					for _, part in pairs(plr.Character:GetDescendants()) do
+						if part:IsA("BasePart") then
+							part.CanCollide = false
+						end
+					end
+				end)
+			end
+		end
+	end)
+	
+	-- Anti AFK Loop
+	task.spawn(function()
+		while task.wait(60) do
+			if _G.AntiAFK then
+				pcall(function()
+					vim2:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+					task.wait(1)
+					vim2:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+				end)
+			end
+		end
+	end)
+	
+	-- ESP Player
+	task.spawn(function()
+		local espNumber = math.random(1, 1000000)
+		while task.wait(0.5) do
+			if _G.ESPPlayer then
+				pcall(function()
+					for _, p in pairs(game.Players:GetPlayers()) do
+						if p ~= plr and p.Character and p.Character:FindFirstChild("Head") then
+							local head = p.Character.Head
+							if not head:FindFirstChild("NameESP") then
+								local bill = Instance.new("BillboardGui")
+								bill.Name = "NameESP"
+								bill.Parent = head
+								bill.Size = UDim2.new(0, 200, 0, 40)
+								bill.Adornee = head
+								bill.AlwaysOnTop = true
+								
+								local text = Instance.new("TextLabel")
+								text.Parent = bill
+								text.Size = UDim2.new(1, 0, 1, 0)
+								text.BackgroundTransparency = 1
+								text.TextColor3 = Color3.fromRGB(255, 0, 0)
+								text.TextStrokeTransparency = 0.5
+								text.Font = Enum.Font.GothamBold
+								text.TextSize = 12
+								text.Text = p.Name
+							end
+						end
+					end
+				end)
+			else
+				for _, p in pairs(game.Players:GetPlayers()) do
+					if p.Character and p.Character:FindFirstChild("Head") then
+						local esp = p.Character.Head:FindFirstChild("NameESP")
+						if esp then esp:Destroy() end
+					end
+				end
+			end
+		end
+	end)
+	
+	return Tab
+end
+
+return Library
