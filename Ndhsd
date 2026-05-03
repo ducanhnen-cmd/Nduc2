@@ -1,0 +1,593 @@
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/liebertsx/Tora-Library/main/src/librarynew",true))()
+local tab = library:CreateWindow("NducHub - One Tap Hub")
+
+-- SERVICES
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+local Camera = Workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+-- VARIABLES
+local AimbotEnabled = false
+local HitboxEnabled = false
+local HitboxSize = 5
+local HitboxObjects = {}
+
+local FOV_RADIUS = 150
+local SMOOTHING = 0.3
+local FOV_VISIBLE = true
+local FOV_COLOR = Color3.fromRGB(255, 255, 255)
+
+local ESPEnabled = false
+local ESPObjects = {}
+local ESP_MAX_DISTANCE = 500
+
+local FlyEnabled = false
+local FlySpeed = 50
+local FlyConnection
+local FlyBodyVelocity
+local FlyBodyGyro
+
+-- Mobile Fly
+local TouchUp = false
+local TouchDown = false
+local FlyScreenGui = nil
+
+-- FOV CIRCLE
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Visible = false
+FOVCircle.Color = FOV_COLOR
+FOVCircle.Thickness = 1.5
+FOVCircle.NumSides = 64
+FOVCircle.Radius = FOV_RADIUS
+FOVCircle.Filled = false
+
+local function UpdateFOVCircle()
+    if FOVCircle then
+        if FOV_VISIBLE and AimbotEnabled then
+            FOVCircle.Visible = true
+            FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+            FOVCircle.Radius = FOV_RADIUS
+        else
+            FOVCircle.Visible = false
+        end
+    end
+end
+
+-- FOV không mất sau khi chết
+LocalPlayer.CharacterAdded:Connect(function(character)
+    task.wait(0.1)
+    UpdateFOVCircle()
+end)
+
+-- ==================== HITBOX (MÀU ĐỎ) ====================
+local function CreateHitbox(player)
+    if player == LocalPlayer then return end
+    
+    local function setupHitbox(character)
+        if not character then return end
+        
+        -- Xóa hitbox cũ
+        if HitboxObjects[player] then
+            for _, obj in pairs(HitboxObjects[player]) do
+                if obj then obj:Destroy() end
+            end
+        end
+        HitboxObjects[player] = {}
+        
+        -- HITBOX ĐẦU - MÀU ĐỎ
+        local head = character:WaitForChild("Head", 5)
+        if head then
+            local hitbox = Instance.new("Part")
+            hitbox.Name = "HitboxExpander_Head"
+            hitbox.Transparency = 0.5              -- Có thể nhìn thấy
+            hitbox.BrickColor = BrickColor.new("Bright red")  -- MÀU ĐỎ
+            hitbox.Material = Enum.Material.Neon
+            hitbox.CanCollide = false
+            hitbox.CanQuery = false
+            hitbox.Size = Vector3.new(HitboxSize, HitboxSize, HitboxSize)
+            hitbox.Massless = true
+            hitbox.Parent = character
+            
+            local weld = Instance.new("WeldConstraint")
+            weld.Part0 = hitbox
+            weld.Part1 = head
+            weld.Parent = hitbox
+            HitboxObjects[player].HeadHitbox = hitbox
+        end
+        
+        -- HITBOX THÂN - MÀU ĐỎ
+        local hrp = character:WaitForChild("HumanoidRootPart", 5)
+        if hrp then
+            local bodyHitbox = Instance.new("Part")
+            bodyHitbox.Name = "HitboxExpander_Body"
+            bodyHitbox.Transparency = 0.5              -- Có thể nhìn thấy
+            bodyHitbox.BrickColor = BrickColor.new("Bright red")  -- MÀU ĐỎ
+            bodyHitbox.Material = Enum.Material.Neon
+            bodyHitbox.CanCollide = false
+            bodyHitbox.CanQuery = false
+            bodyHitbox.Size = Vector3.new(HitboxSize, HitboxSize * 1.5, HitboxSize)
+            bodyHitbox.Massless = true
+            bodyHitbox.Parent = character
+            
+            local weld = Instance.new("WeldConstraint")
+            weld.Part0 = bodyHitbox
+            weld.Part1 = hrp
+            weld.Parent = bodyHitbox
+            HitboxObjects[player].BodyHitbox = bodyHitbox
+        end
+    end
+    
+    if player.Character then
+        setupHitbox(player.Character)
+    end
+    
+    -- Hitbox tự tạo lại khi địch hồi sinh
+    player.CharacterAdded:Connect(function(character)
+        if HitboxEnabled then
+            task.wait(0.3)
+            setupHitbox(character)
+        end
+    end)
+end
+
+local function ToggleHitbox(state)
+    HitboxEnabled = state
+    if state then
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                CreateHitbox(player)
+            end
+        end
+    else
+        for player, objects in pairs(HitboxObjects) do
+            for _, obj in pairs(objects) do
+                if obj then obj:Destroy() end
+            end
+        end
+        HitboxObjects = {}
+    end
+end
+
+-- ==================== AIMBOT ====================
+local function GetClosestPlayerInFOV()
+    local closestPlayer = nil
+    local shortestDistance = FOV_RADIUS
+    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local humanoid = player.Character:FindFirstChild("Humanoid")
+            local head = player.Character:FindFirstChild("Head")
+            
+            if humanoid and humanoid.Health > 0 and head then
+                local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                
+                if onScreen then
+                    local distanceFromCenter = (Vector2.new(screenPos.X, screenPos.Y) - screenCenter).Magnitude
+                    if distanceFromCenter <= FOV_RADIUS and distanceFromCenter < shortestDistance then
+                        shortestDistance = distanceFromCenter
+                        closestPlayer = player
+                    end
+                end
+            end
+        end
+    end
+    
+    return closestPlayer
+end
+
+-- Hỗ trợ PC (chuột trái) + Mobile (touch)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not AimbotEnabled then return end
+    
+    local isShooting = false
+    
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isShooting = true
+    elseif input.UserInputType == Enum.UserInputType.Touch then
+        isShooting = true
+    end
+    
+    if isShooting and not gameProcessed then
+        local target = GetClosestPlayerInFOV()
+        if target and target.Character then
+            local head = target.Character:FindFirstChild("Head")
+            if head then
+                local cameraPos = Camera.CFrame.Position
+                local targetPos = head.Position
+                local newCFrame = CFrame.lookAt(cameraPos, targetPos)
+                Camera.CFrame = Camera.CFrame:Lerp(newCFrame, SMOOTHING)
+            end
+        end
+    end
+end)
+
+-- ==================== ESP ====================
+local function CreateESP(player)
+    if player == LocalPlayer then return end
+    
+    -- Xóa ESP cũ
+    if ESPObjects[player] then
+        if ESPObjects[player].DistanceConnection then
+            ESPObjects[player].DistanceConnection:Disconnect()
+        end
+        if ESPObjects[player].Highlight then
+            ESPObjects[player].Highlight:Destroy()
+        end
+        ESPObjects[player] = nil
+    end
+    
+    local function setupESP(character)
+        if not character then return end
+        
+        -- Xóa highlight cũ trong character
+        local oldHighlight = character:FindFirstChild("PlayerESP")
+        if oldHighlight then oldHighlight:Destroy() end
+        
+        -- Xóa trong bảng nếu có
+        if ESPObjects[player] then
+            if ESPObjects[player].DistanceConnection then
+                ESPObjects[player].DistanceConnection:Disconnect()
+            end
+            if ESPObjects[player].Highlight then
+                ESPObjects[player].Highlight:Destroy()
+            end
+            ESPObjects[player] = nil
+        end
+        
+        ESPObjects[player] = {}
+        
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "PlayerESP"
+        highlight.FillColor = Color3.fromRGB(0, 255, 0)
+        highlight.OutlineColor = Color3.fromRGB(0, 200, 0)
+        highlight.FillTransparency = 0.3
+        highlight.OutlineTransparency = 0
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        highlight.Adornee = character
+        highlight.Parent = character
+        ESPObjects[player].Highlight = highlight
+        
+        -- Kiểm tra khoảng cách
+        local distanceCheck
+        distanceCheck = RunService.RenderStepped:Connect(function()
+            if not ESPEnabled then
+                distanceCheck:Disconnect()
+                return
+            end
+            if not character or not character.Parent then
+                if ESPObjects[player] and ESPObjects[player].Highlight then
+                    ESPObjects[player].Highlight.Enabled = false
+                end
+                return
+            end
+            if ESPObjects[player] and ESPObjects[player].Highlight and ESPObjects[player].Highlight.Parent then
+                local myChar = LocalPlayer.Character
+                local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+                local targetHRP = character:FindFirstChild("HumanoidRootPart")
+                if myHRP and targetHRP then
+                    local distance = (myHRP.Position - targetHRP.Position).Magnitude
+                    ESPObjects[player].Highlight.Enabled = (distance <= ESP_MAX_DISTANCE)
+                end
+            end
+        end)
+        ESPObjects[player].DistanceConnection = distanceCheck
+    end
+    
+    -- ESP cho character hiện tại
+    if player.Character then
+        setupESP(player.Character)
+    end
+    
+    -- ESP tự hiện lại khi địch hồi sinh
+    player.CharacterAdded:Connect(function(character)
+        if ESPEnabled then
+            task.wait(0.5)
+            setupESP(character)
+        end
+    end)
+end
+
+local function ToggleESP(state)
+    ESPEnabled = state
+    if state then
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                CreateESP(player)
+            end
+        end
+    else
+        for player, objects in pairs(ESPObjects) do
+            if objects.DistanceConnection then
+                objects.DistanceConnection:Disconnect()
+            end
+            if objects.Highlight then
+                objects.Highlight:Destroy()
+            end
+            ESPObjects[player] = nil
+        end
+    end
+end
+
+-- ==================== FLY ====================
+local function CreateFlyButtons()
+    if FlyScreenGui then FlyScreenGui:Destroy() end
+    
+    FlyScreenGui = Instance.new("ScreenGui")
+    FlyScreenGui.Name = "FlyButtons"
+    FlyScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    
+    -- Nút UP
+    local upBtn = Instance.new("TextButton")
+    upBtn.Size = UDim2.new(0, 70, 0, 70)
+    upBtn.Position = UDim2.new(0.85, 0, 0.45, -80)
+    upBtn.Text = "⬆"
+    upBtn.FontSize = Enum.FontSize.Size28
+    upBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    upBtn.BackgroundTransparency = 0.4
+    upBtn.Parent = FlyScreenGui
+    
+    upBtn.MouseButton1Down:Connect(function() TouchUp = true end)
+    upBtn.MouseButton1Up:Connect(function() TouchUp = false end)
+    
+    -- Nút DOWN
+    local downBtn = Instance.new("TextButton")
+    downBtn.Size = UDim2.new(0, 70, 0, 70)
+    downBtn.Position = UDim2.new(0.85, 0, 0.45, 10)
+    downBtn.Text = "⬇"
+    downBtn.FontSize = Enum.FontSize.Size28
+    downBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    downBtn.BackgroundTransparency = 0.4
+    downBtn.Parent = FlyScreenGui
+    
+    downBtn.MouseButton1Down:Connect(function() TouchDown = true end)
+    downBtn.MouseButton1Up:Connect(function() TouchDown = false end)
+end
+
+local function RemoveFlyButtons()
+    if FlyScreenGui then FlyScreenGui:Destroy() end
+    FlyScreenGui = nil
+end
+
+local function StartFly()
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+    local rootPart = character:WaitForChild("HumanoidRootPart")
+    
+    FlyBodyVelocity = Instance.new("BodyVelocity")
+    FlyBodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    FlyBodyVelocity.Velocity = Vector3.zero
+    FlyBodyVelocity.Parent = rootPart
+    
+    FlyBodyGyro = Instance.new("BodyGyro")
+    FlyBodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+    FlyBodyGyro.CFrame = Camera.CFrame
+    FlyBodyGyro.Parent = rootPart
+    
+    humanoid.PlatformStand = true
+    
+    if UserInputService.TouchEnabled then
+        CreateFlyButtons()
+    end
+    
+    FlyConnection = RunService.RenderStepped:Connect(function()
+        if not FlyEnabled then return end
+        if not character or not character.Parent then return end
+        if not FlyBodyVelocity or not FlyBodyVelocity.Parent then return end
+        
+        local camCF = Camera.CFrame
+        local moveDir = Vector3.zero
+        
+        -- PC: WASD bay theo hướng nhìn
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+            moveDir = moveDir + camCF.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+            moveDir = moveDir - camCF.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+            moveDir = moveDir - camCF.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+            moveDir = moveDir + camCF.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            moveDir = moveDir + Vector3.new(0, 1, 0)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+            moveDir = moveDir - Vector3.new(0, 1, 0)
+        end
+        
+        -- Mobile: Joystick + nút
+        if UserInputService.TouchEnabled and humanoid then
+            local moveVec = humanoid.MoveDirection
+            if moveVec.Magnitude > 0 then
+                moveDir = moveDir + camCF.LookVector * moveVec.Z
+                moveDir = moveDir + camCF.RightVector * moveVec.X
+            end
+            if TouchUp then
+                moveDir = moveDir + camCF.LookVector
+            end
+            if TouchDown then
+                moveDir = moveDir - camCF.LookVector
+            end
+        end
+        
+        if moveDir.Magnitude > 0 then
+            FlyBodyVelocity.Velocity = moveDir.Unit * FlySpeed
+        else
+            FlyBodyVelocity.Velocity = Vector3.zero
+        end
+        
+        FlyBodyGyro.CFrame = CFrame.new(rootPart.Position, rootPart.Position + camCF.LookVector)
+    end)
+end
+
+local function StopFly()
+    if FlyConnection then FlyConnection:Disconnect(); FlyConnection = nil end
+    if FlyBodyVelocity then FlyBodyVelocity:Destroy(); FlyBodyVelocity = nil end
+    if FlyBodyGyro then FlyBodyGyro:Destroy(); FlyBodyGyro = nil end
+    
+    RemoveFlyButtons()
+    TouchUp = false
+    TouchDown = false
+    
+    local character = LocalPlayer.Character
+    if character then
+        local humanoid = character:FindFirstChild("Humanoid")
+        if humanoid then humanoid.PlatformStand = false end
+    end
+end
+
+-- ==================== PLAYER EVENTS ====================
+Players.PlayerAdded:Connect(function(player)
+    if ESPEnabled then CreateESP(player) end
+    if HitboxEnabled then CreateHitbox(player) end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    if ESPObjects[player] then
+        if ESPObjects[player].DistanceConnection then
+            ESPObjects[player].DistanceConnection:Disconnect()
+        end
+        if ESPObjects[player].Highlight then
+            ESPObjects[player].Highlight:Destroy()
+        end
+        ESPObjects[player] = nil
+    end
+    if HitboxObjects[player] then
+        for _, obj in pairs(HitboxObjects[player]) do
+            if obj then obj:Destroy() end
+        end
+        HitboxObjects[player] = nil
+    end
+end)
+
+-- ==================== MAIN LOOP ====================
+RunService.RenderStepped:Connect(function()
+    UpdateFOVCircle()
+end)
+
+-- ==================== UI ====================
+-- Tab AimBot
+local aimbotFolder = tab:AddFolder("🎯 AimBot")
+
+aimbotFolder:AddToggle({
+    text = "Enable AimBot",
+    flag = "aimbot_toggle",
+    callback = function(v)
+        AimbotEnabled = v
+        UpdateFOVCircle()
+    end
+})
+
+aimbotFolder:AddSlider({
+    text = "FOV Radius",
+    min = 30,
+    max = 500,
+    def = 150,
+    callback = function(v)
+        FOV_RADIUS = v
+        UpdateFOVCircle()
+    end
+})
+
+aimbotFolder:AddSlider({
+    text = "Smoothing",
+    min = 0.05,
+    max = 1,
+    def = 0.3,
+    callback = function(v)
+        SMOOTHING = v
+    end
+})
+
+aimbotFolder:AddToggle({
+    text = "Show FOV Circle",
+    flag = "show_fov",
+    callback = function(v)
+        FOV_VISIBLE = v
+        UpdateFOVCircle()
+    end
+})
+
+aimbotFolder:AddLabel({text = "PC: Bấm chuột = Ghim | Mobile: Chạm = Ghim"})
+
+aimbotFolder:AddToggle({
+    text = "Enable Hitbox (Đỏ)",
+    flag = "hitbox_toggle",
+    callback = function(v)
+        ToggleHitbox(v)
+    end
+})
+
+aimbotFolder:AddSlider({
+    text = "Hitbox Size",
+    min = 2,
+    max = 15,
+    def = 5,
+    callback = function(v)
+        HitboxSize = v
+        if HitboxEnabled then
+            ToggleHitbox(false)
+            ToggleHitbox(true)
+        end
+    end
+})
+
+-- Tab ESP
+local espFolder = tab:AddFolder("👁 ESP Player")
+
+espFolder:AddToggle({
+    text = "Enable ESP",
+    flag = "esp_toggle",
+    callback = function(v)
+        ToggleESP(v)
+    end
+})
+
+espFolder:AddSlider({
+    text = "ESP Distance",
+    min = 100,
+    max = 2000,
+    def = 500,
+    callback = function(v)
+        ESP_MAX_DISTANCE = v
+    end
+})
+
+espFolder:AddLabel({text = "ESP tự hiện khi địch hồi sinh"})
+
+-- Tab Fly
+local flyFolder = tab:AddFolder("🕊 Fly")
+
+flyFolder:AddToggle({
+    text = "Enable Fly",
+    flag = "fly_toggle",
+    callback = function(v)
+        FlyEnabled = v
+        if v then StartFly() else StopFly() end
+    end
+})
+
+flyFolder:AddSlider({
+    text = "Fly Speed",
+    min = 10,
+    max = 200,
+    def = 50,
+    callback = function(v)
+        FlySpeed = v
+    end
+})
+
+flyFolder:AddLabel({text = "PC: WASD bay theo hướng nhìn"})
+flyFolder:AddLabel({text = "Nhìn lên + W = Bay lên"})
+flyFolder:AddLabel({text = "Nhìn xuống + S = Bay xuống"})
+flyFolder:AddLabel({text = "Space = Bay thẳng lên | Shift = Xuống"})
+flyFolder:AddLabel({text = "Mobile: Joystick + Nút ⬆⬇"})
+
+library:Close()
+library:Init()
