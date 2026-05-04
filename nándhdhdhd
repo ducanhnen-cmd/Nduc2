@@ -1,0 +1,969 @@
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/liebertsx/Tora-Library/main/src/librarynew",true))()
+local tab = library:CreateWindow("NducHub")
+
+-- Services
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local Camera = workspace.CurrentCamera
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Kiểm tra thiết bị
+local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
+-- ==================== BIẾN AIMBOT ====================
+local aimbotEnabled = false
+local aimbotFov = 150
+local aimbotSmooth = 0.05
+local aimbotMaxDist = 100
+local aimIgnoreTeam = true
+local autoAimEnabled = false
+local aimColor = Color3.fromRGB(255, 60, 60)
+
+-- ==================== BIẾN ESP ====================
+local espEnabled = false
+local showNames = false
+local showHealth = false
+local showBox = false
+local showTracer = true
+local espIgnoreTeam = true
+local espMaxDist = 300
+local espColor = Color3.fromHSV(0.75, 1, 0.9)
+local espObjects = {}
+
+-- ==================== BIẾN INSTANT KILL ====================
+local instantKillEnabled = false
+local currentTarget = nil
+local followConnection = nil
+local DISTANCE = 4
+local HEIGHT_OFFSET = 0
+local allTargets = {}
+local currentIndex = 1
+local lastAttackTime = 0
+
+-- ==================== LOBBY DETECTION ====================
+local lobbyModel = Workspace:FindFirstChild("Lobby")
+local lobbyCenter = nil
+local LOBBY_RADIUS = 200
+
+if lobbyModel then
+    pcall(function()
+        lobbyCenter = lobbyModel:GetPivot().Position
+    end)
+end
+
+local function isInLobby(model)
+    if not lobbyCenter then return false end
+    local hrp = model:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    return (hrp.Position - lobbyCenter).Magnitude <= LOBBY_RADIUS
+end
+
+-- Kiểm tra model có phải người chơi thật không
+local function isRealPlayer(model)
+    return Players:GetPlayerFromCharacter(model) ~= nil
+end
+
+-- ==================== FOV CIRCLE ====================
+local fovGui = Instance.new("ScreenGui")
+fovGui.Name = "FovGui"
+fovGui.ResetOnSpawn = false
+fovGui.IgnoreGuiInset = true
+fovGui.Parent = playerGui
+
+local fovCircle = Instance.new("Frame")
+fovCircle.Name = "FovCircle"
+fovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+fovCircle.BackgroundTransparency = 1
+fovCircle.BorderSizePixel = 0
+fovCircle.Size = UDim2.new(0, aimbotFov * 2, 0, aimbotFov * 2)
+fovCircle.Visible = false
+fovCircle.ZIndex = 100
+fovCircle.Parent = fovGui
+
+Instance.new("UICorner", fovCircle).CornerRadius = UDim.new(1, 0)
+
+local fovStroke = Instance.new("UIStroke")
+fovStroke.Color = aimColor
+fovStroke.Thickness = 1.5
+fovStroke.Transparency = 0.2
+fovStroke.Parent = fovCircle
+
+-- ==================== MOBILE AIM BUTTON ====================
+local mobileAimButton = nil
+local mobileAimHeld = false
+
+if isMobile then
+    mobileAimButton = Instance.new("TextButton")
+    mobileAimButton.Name = "AimButton"
+    mobileAimButton.Size = UDim2.new(0, 80, 0, 80)
+    mobileAimButton.Position = UDim2.new(0.8, 0, 0.7, 0)
+    mobileAimButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+    mobileAimButton.BackgroundTransparency = 0.6
+    mobileAimButton.Text = "AIM"
+    mobileAimButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    mobileAimButton.Font = Enum.Font.GothamBold
+    mobileAimButton.TextSize = 18
+    mobileAimButton.ZIndex = 200
+    mobileAimButton.Visible = false
+    mobileAimButton.Parent = playerGui
+    
+    Instance.new("UICorner", mobileAimButton).CornerRadius = UDim.new(1, 0)
+    
+    mobileAimButton.MouseButton1Down:Connect(function()
+        mobileAimHeld = true
+    end)
+    mobileAimButton.MouseButton1Up:Connect(function()
+        mobileAimHeld = false
+    end)
+    mobileAimButton.TouchLongPress:Connect(function()
+        mobileAimHeld = true
+    end)
+    mobileAimButton.TouchTap:Connect(function()
+        mobileAimHeld = true
+        task.wait(0.1)
+        mobileAimHeld = false
+    end)
+end
+
+-- ==================== ESP FUNCTIONS ====================
+local function removeESP(plr)
+    local data = espObjects[plr]
+    if not data then return end
+    if data.highlight and data.highlight.Parent then data.highlight:Destroy() end
+    if data.billboard and data.billboard.Parent then data.billboard:Destroy() end
+    if data.tracer and data.tracer.Parent then data.tracer:Destroy() end
+    if data.attachment0 and data.attachment0.Parent then data.attachment0:Destroy() end
+    if data.attachment1 and data.attachment1.Parent then data.attachment1:Destroy() end
+    espObjects[plr] = nil
+end
+
+local function createESP(plr)
+    if plr == player then return end
+    if espIgnoreTeam and plr.Team and player.Team and plr.Team == player.Team then return end
+    
+    removeESP(plr)
+    
+    local char = plr.Character
+    if not char then return end
+    local head = char:FindFirstChild("Head")
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not head or not hrp or not hum then return end
+    
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "ESP_Highlight"
+    highlight.Adornee = char
+    highlight.FillColor = espColor
+    highlight.FillTransparency = 0.8
+    highlight.OutlineColor = espColor
+    highlight.OutlineTransparency = 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Enabled = showBox and espEnabled
+    highlight.Parent = char
+    
+    local bill = Instance.new("BillboardGui")
+    bill.Name = "ESP_Bill"
+    bill.Adornee = head
+    bill.AlwaysOnTop = true
+    bill.Size = UDim2.new(0, 100, 0, 40)
+    bill.StudsOffset = Vector3.new(0, 2, 0)
+    bill.Parent = playerGui
+    
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = plr.DisplayName
+    nameLabel.TextColor3 = espColor
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextSize = 12
+    nameLabel.TextStrokeTransparency = 0.4
+    nameLabel.Visible = showNames
+    nameLabel.Parent = bill
+    
+    local healthLabel = Instance.new("TextLabel")
+    healthLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    healthLabel.Position = UDim2.new(0, 0, 0.5, 0)
+    healthLabel.BackgroundTransparency = 1
+    healthLabel.Text = "♥ " .. math.floor(hum.Health)
+    healthLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+    healthLabel.Font = Enum.Font.Code
+    healthLabel.TextSize = 11
+    healthLabel.Visible = showHealth
+    healthLabel.Parent = bill
+    
+    local attachment0 = Instance.new("Attachment")
+    attachment0.Parent = hrp
+    
+    local localHrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    local attachment1 = Instance.new("Attachment")
+    attachment1.Parent = localHrp or hrp
+    
+    local tracer = Instance.new("Beam")
+    tracer.Attachment0 = attachment0
+    tracer.Attachment1 = attachment1
+    tracer.Color = ColorSequence.new(espColor)
+    tracer.Width0 = 0.1
+    tracer.Width1 = 0.1
+    tracer.Transparency = NumberSequence.new(0.4)
+    tracer.Enabled = showTracer and espEnabled
+    tracer.Parent = hrp
+    
+    espObjects[plr] = {
+        highlight = highlight,
+        billboard = bill,
+        nameLabel = nameLabel,
+        healthLabel = healthLabel,
+        tracer = tracer,
+        attachment0 = attachment0,
+        attachment1 = attachment1,
+        hrp = hrp,
+        hum = hum
+    }
+end
+
+function refreshAllESP()
+    for plr in pairs(espObjects) do
+        removeESP(plr)
+    end
+    if not espEnabled then return end
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= player then
+            local sameTeam = false
+            if espIgnoreTeam and plr.Team and player.Team and plr.Team == player.Team then
+                sameTeam = true
+            end
+            if not sameTeam then
+                createESP(plr)
+            end
+        end
+    end
+end
+
+-- ==================== INSTANT KILL FUNCTIONS ====================
+local function isTargetAlive(model)
+    return model and model:FindFirstChild("HumanoidRootPart")
+        and model:FindFirstChild("Humanoid")
+        and model.Humanoid.Health > 0
+end
+
+local function isValidTarget(model)
+    -- Phải còn sống
+    if not isTargetAlive(model) then return false end
+    
+    -- Không phải bản thân
+    if model == player.Character then return false end
+    
+    -- Kiểm tra xem có đang trong sảnh/phòng chờ không
+    if isInLobby(model) then return false end
+    
+    -- Nếu là người chơi thật, kiểm tra có trong lobby không
+    if isRealPlayer(model) then
+        if isInLobby(player.Character) then return false end
+    end
+    
+    -- Không đánh đồng đội
+    local plr = Players:GetPlayerFromCharacter(model)
+    if plr and plr.Team and player.Team and plr.Team == player.Team then
+        return false
+    end
+    
+    return true
+end
+
+local function updateAllTargets()
+    allTargets = {}
+    local localChar = player.Character
+    
+    -- Thêm tất cả người chơi thật (không trong sảnh)
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            local char = plr.Character
+            -- Chỉ thêm nếu KHÔNG ở trong sảnh
+            if not isInLobby(char) then
+                table.insert(allTargets, char)
+            end
+        end
+    end
+    
+    -- Thêm tất cả bot/NPC (không trong sảnh)
+    for _, obj in ipairs(Workspace:GetChildren()) do
+        if obj:IsA("Model")
+            and obj:FindFirstChild("Humanoid")
+            and obj:FindFirstChild("HumanoidRootPart")
+            and not isRealPlayer(obj)
+            and not isInLobby(obj) then -- Bỏ qua nếu ở sảnh
+            
+            -- Kiểm tra các loại bot phổ biến
+            local validBot = false
+            local botNames = {"Astration", "Bot", "Dummy", "NPC", "Zombie", "Enemy", "Target", "Training"}
+            
+            for _, name in ipairs(botNames) do
+                if obj.Name:find(name) then
+                    validBot = true
+                    break
+                end
+            end
+            
+            -- Thêm cả các model có Humanoid mà không cần check tên cụ thể
+            if validBot or obj:FindFirstChild("Humanoid").Health > 0 then
+                table.insert(allTargets, obj)
+            end
+        end
+    end
+    
+    -- Sắp xếp theo khoảng cách gần nhất
+    if localChar and localChar:FindFirstChild("HumanoidRootPart") then
+        local localPos = localChar.HumanoidRootPart.Position
+        table.sort(allTargets, function(a, b)
+            local hrpA = a:FindFirstChild("HumanoidRootPart")
+            local hrpB = b:FindFirstChild("HumanoidRootPart")
+            if not hrpA or not hrpB then return false end
+            return (hrpA.Position - localPos).Magnitude < (hrpB.Position - localPos).Magnitude
+        end)
+    end
+end
+
+local function resetCamera()
+    Camera.CameraType = Enum.CameraType.Custom
+end
+
+local function attackTarget()
+    local currentTime = tick()
+    if currentTime - lastAttackTime < 0.3 then return end -- Giới hạn tốc độ đánh
+    
+    local tool = player.Character and player.Character:FindFirstChildOfClass("Tool")
+    
+    if tool then
+        -- Kích hoạt tool để đánh
+        pcall(function()
+            tool:Activate()
+            task.wait(0.1)
+            tool:Deactivate()
+        end)
+    else
+        -- Nếu không có tool, dùng click để đấm
+        pcall(function()
+            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+            task.wait(0.05)
+            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+        end)
+    end
+    
+    lastAttackTime = currentTime
+end
+
+local function followTarget(model)
+    if followConnection then 
+        followConnection:Disconnect() 
+    end
+    
+    currentTarget = model
+    Camera.CameraType = Enum.CameraType.Scriptable
+    
+    followConnection = RunService.Heartbeat:Connect(function()
+        -- Kiểm tra nếu Instant Kill bị tắt
+        if not instantKillEnabled then
+            if followConnection then followConnection:Disconnect() end
+            followConnection = nil
+            currentTarget = nil
+            resetCamera()
+            return
+        end
+        
+        -- Kiểm tra mục tiêu còn hợp lệ không
+        if not isValidTarget(model) then
+            if followConnection then followConnection:Disconnect() end
+            followConnection = nil
+            currentTarget = nil
+            resetCamera()
+            return
+        end
+        
+        local targetHRP = model:FindFirstChild("HumanoidRootPart")
+        local targetHead = model:FindFirstChild("Head")
+        local targetHum = model:FindFirstChild("Humanoid")
+        local myHRP = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        local myHead = player.Character and player.Character:FindFirstChild("Head")
+        
+        if not targetHRP or not myHRP then return end
+        
+        -- Bật noclip để đi xuyên tường
+        myHRP.CanCollide = false
+        
+        -- === TELEPORT NGAY PHÍA SAU MỤC TIÊU ===
+        local targetPos = targetHRP.Position
+        local targetVelocity = targetHRP.Velocity
+        
+        -- Dự đoán vị trí tương lai của mục tiêu (nếu đang di chuyển)
+        local predictionTime = 0.15
+        local predictedPos = targetPos + (targetVelocity * predictionTime)
+        
+        -- Lấy hướng nhìn của mục tiêu
+        local lookVector
+        if targetHRP then
+            lookVector = targetHRP.CFrame.LookVector
+        else
+            lookVector = Vector3.new(0, 0, -1)
+        end
+        
+        -- Đứng ngay sau lưng mục tiêu
+        local behindPos = predictedPos + Vector3.new(0, HEIGHT_OFFSET, 0) - (lookVector * DISTANCE)
+        
+        -- Kiểm tra khoảng cách để teleport mượt hơn
+        local currentDist = (myHRP.Position - behindPos).Magnitude
+        
+        -- Nếu quá xa (> 50 studs), teleport ngay lập tức
+        if currentDist > 50 then
+            myHRP.CFrame = CFrame.lookAt(behindPos, predictedPos)
+        else
+            -- Nếu gần, di chuyển mượt mà
+            myHRP.Velocity = (behindPos - myHRP.Position) * 8
+            myHRP.CFrame = CFrame.lookAt(myHRP.Position, predictedPos)
+        end
+        
+        -- === TỰ ĐỘNG ĐÁNH KHI Ở GẦN ===
+        if targetHum then
+            local distToTarget = (myHRP.Position - targetPos).Magnitude
+            
+            -- Nếu đủ gần, tự động đánh
+            if distToTarget <= DISTANCE + 3 then
+                attackTarget()
+            end
+        end
+        
+        -- === CAMERA LOCK VÀO ĐẦU MỤC TIÊU ===
+        if targetHead and myHead then
+            local myEyePos = myHead.Position
+            local targetLookPos = targetHead.Position
+            Camera.CFrame = CFrame.lookAt(myEyePos, targetLookPos)
+        elseif targetHRP and myHRP then
+            local myEyePos = myHRP.Position + Vector3.new(0, 2, 0)
+            local targetLookPos = targetHRP.Position + Vector3.new(0, 1.5, 0)
+            Camera.CFrame = CFrame.lookAt(myEyePos, targetLookPos)
+        end
+    end)
+end
+
+-- ==================== UI FOLDERS ====================
+local aimbotFolder = tab:AddFolder("AimBot")
+local espFolder = tab:AddFolder("Esp Player")
+local instantKillFolder = tab:AddFolder("Instant Kill")
+
+-- ==================== AIMBOT UI ====================
+aimbotFolder:AddToggle({
+    text = "Enable Aimbot",
+    flag = "aimbot_enabled",
+    callback = function(v)
+        aimbotEnabled = v
+        if isMobile and mobileAimButton then
+            mobileAimButton.Visible = v
+        end
+    end
+})
+
+aimbotFolder:AddToggle({
+    text = "Auto Aim",
+    flag = "auto_aim",
+    callback = function(v)
+        autoAimEnabled = v
+    end
+})
+
+aimbotFolder:AddToggle({
+    text = "Ignore Team",
+    flag = "aim_ignore_team",
+    callback = function(v)
+        aimIgnoreTeam = v
+    end
+})
+
+aimbotFolder:AddSlider({
+    text = "FOV Radius",
+    min = 0,
+    max = 400,
+    dual = false,
+    callback = function(v)
+        aimbotFov = v
+    end
+})
+
+aimbotFolder:AddSlider({
+    text = "Smoothness",
+    min = 0,
+    max = 100,
+    dual = false,
+    callback = function(v)
+        aimbotSmooth = v / 100
+    end
+})
+
+aimbotFolder:AddSlider({
+    text = "Max Distance",
+    min = 10,
+    max = 500,
+    dual = false,
+    callback = function(v)
+        aimbotMaxDist = v
+    end
+})
+
+aimbotFolder:AddColor({
+    text = "FOV Color",
+    flag = "aim_color",
+    type = "color",
+    callback = function(v)
+        aimColor = v
+    end
+})
+
+-- ==================== ESP UI ====================
+espFolder:AddToggle({
+    text = "Enable ESP",
+    flag = "esp_enabled",
+    callback = function(v)
+        espEnabled = v
+        if v then
+            refreshAllESP()
+        else
+            for plr in pairs(espObjects) do
+                removeESP(plr)
+            end
+        end
+    end
+})
+
+espFolder:AddToggle({
+    text = "Show Names",
+    flag = "show_names",
+    callback = function(v)
+        showNames = v
+        for _, data in pairs(espObjects) do
+            if data.nameLabel then
+                data.nameLabel.Visible = v and espEnabled
+            end
+        end
+    end
+})
+
+espFolder:AddToggle({
+    text = "Show Health",
+    flag = "show_health",
+    callback = function(v)
+        showHealth = v
+        for _, data in pairs(espObjects) do
+            if data.healthLabel then
+                data.healthLabel.Visible = v and espEnabled
+            end
+        end
+    end
+})
+
+espFolder:AddToggle({
+    text = "Show Tracer",
+    flag = "show_tracer",
+    callback = function(v)
+        showTracer = v
+        for _, data in pairs(espObjects) do
+            if data.tracer then
+                data.tracer.Enabled = v and espEnabled
+            end
+        end
+    end
+})
+
+espFolder:AddToggle({
+    text = "Show Box",
+    flag = "show_box",
+    callback = function(v)
+        showBox = v
+        for _, data in pairs(espObjects) do
+            if data.highlight then
+                data.highlight.Enabled = v and espEnabled
+            end
+        end
+    end
+})
+
+espFolder:AddToggle({
+    text = "Ignore Team",
+    flag = "esp_ignore_team",
+    callback = function(v)
+        espIgnoreTeam = v
+        refreshAllESP()
+    end
+})
+
+espFolder:AddSlider({
+    text = "Max Distance",
+    min = 10,
+    max = 1000,
+    dual = false,
+    callback = function(v)
+        espMaxDist = v
+    end
+})
+
+espFolder:AddColor({
+    text = "ESP Color",
+    flag = "esp_color",
+    type = "color",
+    callback = function(v)
+        espColor = v
+        for _, data in pairs(espObjects) do
+            if data.highlight then
+                data.highlight.FillColor = v
+                data.highlight.OutlineColor = v
+            end
+            if data.tracer then
+                data.tracer.Color = ColorSequence.new(v)
+            end
+            if data.nameLabel then
+                data.nameLabel.TextColor3 = v
+            end
+        end
+    end
+})
+
+-- ==================== INSTANT KILL UI ====================
+instantKillFolder:AddToggle({
+    text = "Instant Kill",
+    flag = "instant_kill",
+    callback = function(v)
+        instantKillEnabled = v
+        if v then
+            updateAllTargets()
+            -- Tự động bắt đầu với mục tiêu gần nhất
+            if #allTargets > 0 then
+                for i = 1, #allTargets do
+                    local model = allTargets[i]
+                    if isValidTarget(model) then
+                        followTarget(model)
+                        currentIndex = i
+                        break
+                    end
+                end
+            end
+        else
+            if followConnection then
+                followConnection:Disconnect()
+                followConnection = nil
+            end
+            currentTarget = nil
+            
+            -- Reset noclip
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                player.Character.HumanoidRootPart.CanCollide = true
+            end
+            
+            resetCamera()
+        end
+    end
+})
+
+instantKillFolder:AddSlider({
+    text = "Follow Distance",
+    min = 2,
+    max = 10,
+    dual = false,
+    callback = function(v)
+        DISTANCE = v
+    end
+})
+
+instantKillFolder:AddSlider({
+    text = "Height Offset",
+    min = -5,
+    max = 5,
+    dual = false,
+    callback = function(v)
+        HEIGHT_OFFSET = v
+    end
+})
+
+instantKillFolder:AddLabel({text = "Auto TP behind enemy"})
+instantKillFolder:AddLabel({text = "Bỏ qua kẻ địch ở sảnh/lobby"})
+instantKillFolder:AddLabel({text = "Tự động đánh khi đủ gần"})
+
+-- ==================== MAIN LOOP ====================
+-- Lưu vị trí trước đó để tính vận tốc (prediction)
+local lastPositions = {}
+local velocityCache = {}
+
+RunService.RenderStepped:Connect(function(deltaTime)
+    local localChar = player.Character
+    local localHrp = localChar and localChar:FindFirstChild("HumanoidRootPart")
+    
+    -- FOV Circle ở giữa màn hình
+    if aimbotEnabled then
+        local screenCenter = Camera.ViewportSize / 2
+        fovCircle.Position = UDim2.new(0, screenCenter.X, 0, screenCenter.Y)
+        fovCircle.Size = UDim2.new(0, aimbotFov * 2, 0, aimbotFov * 2)
+        fovStroke.Color = aimColor
+        fovCircle.Visible = true
+    else
+        fovCircle.Visible = false
+    end
+    
+    -- ESP Update
+    for plr, data in pairs(espObjects) do
+        if not plr.Character or not data.hrp or not data.hrp.Parent then
+            removeESP(plr)
+            continue
+        end
+        
+        if localHrp then
+            local dist = (data.hrp.Position - localHrp.Position).Magnitude
+            local inRange = dist <= espMaxDist
+            
+            if data.highlight and data.highlight.Parent then
+                data.highlight.Enabled = showBox and espEnabled and inRange
+            end
+            if data.tracer and data.tracer.Parent then
+                data.tracer.Enabled = showTracer and espEnabled and inRange
+            end
+            if data.nameLabel then
+                data.nameLabel.Visible = showNames and espEnabled and inRange
+            end
+            if data.healthLabel then
+                data.healthLabel.Visible = showHealth and espEnabled and inRange
+            end
+        end
+        
+        if data.hum and data.hum.Parent then
+            data.healthLabel.Text = "♥ " .. math.floor(data.hum.Health)
+        end
+    end
+    
+    -- ==================== AIMBOT LOGIC (ĐÃ SỬA) ====================
+    if not aimbotEnabled then return end
+    
+    local shouldAim = false
+    if isMobile then
+        shouldAim = mobileAimHeld or autoAimEnabled
+    else
+        shouldAim = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) or autoAimEnabled
+    end
+    
+    if not shouldAim then return end
+    if not localHrp then return end
+    
+    local screenCenter = Camera.ViewportSize / 2
+    local bestTarget = nil
+    local bestDistFromCenter = math.huge
+    local bestScreenPos = nil
+    
+    -- Cập nhật vận tốc cho prediction
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= player and plr.Character then
+            local head = plr.Character:FindFirstChild("Head")
+            if head then
+                local currentPos = head.Position
+                if lastPositions[plr] then
+                    velocityCache[plr] = (currentPos - lastPositions[plr]) / math.max(deltaTime, 0.001)
+                end
+                lastPositions[plr] = currentPos
+            end
+        end
+    end
+    
+    -- Tìm mục tiêu tốt nhất (gần tâm màn hình nhất)
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr == player then continue end
+        if aimIgnoreTeam and plr.Team and player.Team and plr.Team == player.Team then continue end
+        
+        local char = plr.Character
+        if not char then continue end
+        local head = char:FindFirstChild("Head")
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not head or not hum or hum.Health <= 0 then continue end
+        
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if hrp and localHrp then
+            local worldDist = (hrp.Position - localHrp.Position).Magnitude
+            if worldDist > aimbotMaxDist then continue end
+        end
+        
+        -- Sử dụng prediction: nhắm vào vị trí tương lai của head
+        local targetPosition = head.Position
+        if velocityCache[plr] then
+            local predictionTime = 0.1
+            targetPosition = targetPosition + velocityCache[plr] * predictionTime
+        end
+        
+        local screenPos, onScreen = Camera:WorldToViewportPoint(targetPosition)
+        if not onScreen then continue end
+        
+        local distFromCenter = (Vector2.new(screenPos.X, screenPos.Y) - screenCenter).Magnitude
+        
+        -- Ưu tiên mục tiêu gần tâm nhất
+        if distFromCenter <= aimbotFov and distFromCenter < bestDistFromCenter then
+            bestDistFromCenter = distFromCenter
+            bestTarget = plr
+            bestScreenPos = screenPos
+        end
+    end
+    
+    -- Nếu không tìm thấy player, thử tìm NPC/Bot
+    if not bestTarget then
+        for _, obj in ipairs(Workspace:GetChildren()) do
+            if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("Head") then
+                local hum = obj.Humanoid
+                local head = obj.Head
+                
+                if hum.Health <= 0 then continue end
+                if isInLobby(obj) then continue end
+                
+                local hrp = obj:FindFirstChild("HumanoidRootPart")
+                if hrp and localHrp then
+                    local worldDist = (hrp.Position - localHrp.Position).Magnitude
+                    if worldDist > aimbotMaxDist then continue end
+                end
+                
+                local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                if not onScreen then continue end
+                
+                local distFromCenter = (Vector2.new(screenPos.X, screenPos.Y) - screenCenter).Magnitude
+                
+                if distFromCenter <= aimbotFov and distFromCenter < bestDistFromCenter then
+                    bestDistFromCenter = distFromCenter
+                    bestScreenPos = screenPos
+                    bestTarget = {Character = obj, isNPC = true}
+                end
+            end
+        end
+    end
+    
+    if not bestTarget or not bestScreenPos then return end
+    
+    -- Lấy vị trí mục tiêu trên màn hình
+    local targetScreenPos = Vector2.new(bestScreenPos.X, bestScreenPos.Y)
+    local mouseLocation = UserInputService:GetMouseLocation()
+    local delta = targetScreenPos - mouseLocation
+    
+    -- Áp dụng smoothness
+    if isMobile then
+        local targetHead = bestTarget.Character and bestTarget.Character:FindFirstChild("Head")
+        if targetHead then
+            local lookAt = CFrame.new(Camera.CFrame.Position, targetHead.Position)
+            Camera.CFrame = Camera.CFrame:Lerp(lookAt, 0.3)
+        end
+    else
+        local smoothedDelta = delta * (1 - aimbotSmooth)
+        
+        -- Giới hạn tốc độ di chuyển chuột
+        local maxMove = 50
+        if smoothedDelta.Magnitude > maxMove then
+            smoothedDelta = smoothedDelta.Unit * maxMove
+        end
+        
+        mousemoverel(smoothedDelta.X, smoothedDelta.Y)
+    end
+end)
+
+-- ==================== INSTANT KILL LOOP ====================
+spawn(function()
+    while true do
+        task.wait(0.1)
+        
+        if not instantKillEnabled then
+            if followConnection then 
+                followConnection:Disconnect() 
+                followConnection = nil
+            end
+            currentTarget = nil
+            resetCamera()
+            continue
+        end
+        
+        -- Cập nhật danh sách mục tiêu
+        updateAllTargets()
+        
+        if #allTargets == 0 then
+            resetCamera()
+            continue
+        end
+        
+        -- Nếu đang có mục tiêu và mục tiêu còn hợp lệ, tiếp tục theo dõi
+        if currentTarget and isValidTarget(currentTarget) then
+            -- Vẫn đang theo dõi mục tiêu hiện tại
+            continue
+        end
+        
+        -- Tìm mục tiêu mới gần nhất
+        local found = false
+        for i = 1, #allTargets do
+            local model = allTargets[i]
+            
+            if isValidTarget(model) then
+                followTarget(model)
+                currentIndex = i
+                found = true
+                break
+            end
+        end
+        
+        if not found then
+            resetCamera()
+        end
+    end
+end)
+
+-- ==================== EVENTS ====================
+Players.PlayerAdded:Connect(function(plr)
+    plr.CharacterAdded:Connect(function()
+        task.wait(1)
+        if espEnabled then
+            local sameTeam = false
+            if espIgnoreTeam and plr.Team and player.Team and plr.Team == player.Team then
+                sameTeam = true
+            end
+            if not sameTeam then
+                createESP(plr)
+            end
+        end
+    end)
+end)
+
+Players.PlayerRemoving:Connect(function(plr)
+    removeESP(plr)
+    lastPositions[plr] = nil
+    velocityCache[plr] = nil
+end)
+
+player.CharacterAdded:Connect(function(newChar)
+    task.wait(0.5)
+    resetCamera()
+    
+    -- Nếu Instant Kill đang bật và có mục tiêu, tiếp tục đuổi theo
+    if instantKillEnabled then
+        updateAllTargets()
+        
+        if currentTarget and isValidTarget(currentTarget) then
+            followTarget(currentTarget)
+        elseif #allTargets > 0 then
+            for i = 1, #allTargets do
+                if isValidTarget(allTargets[i]) then
+                    followTarget(allTargets[i])
+                    currentIndex = i
+                    break
+                end
+            end
+        end
+    end
+end)
+
+player.OnCharacterRemoving:Connect(function()
+    if followConnection then
+        followConnection:Disconnect()
+        followConnection = nil
+    end
+    currentTarget = nil
+    resetCamera()
+end)
+
+library:Init()
